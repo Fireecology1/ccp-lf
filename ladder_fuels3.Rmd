@@ -9,7 +9,7 @@ bibliography: references.bib
 ```{r setup, include=FALSE}
 .libPaths("C:/Dan/RPackages")
 
-knitr::opts_chunk$set(echo = FALSE, root.dir = "c:/Dan/_Remote_projects/ccp_git/ccp-cfi")
+knitr::opts_chunk$set(echo = FALSE, root.dir = "c:/Dan/_Remote_projects/ccp_lf/files")
 
 rm(list=ls())
 .libPaths("C:/Dan/RPackages")
@@ -23,8 +23,9 @@ require(ggplot2)
 #  mutate(CFI2=factor(CFI, labels=c('Surface', 'Crown')))
 fd4 <- read.csv('c:/Dan/_Remote_projects/ccp-lf/files/fire_data_july2023.csv') %>%  
   mutate(CFI2=factor(CFI1, labels=c('Surface', 'Crown')))
+d1 <- read.csv('c:/Dan/_Remote_projects/ccp-lf/files/fire_data_d1.csv')
 
-setwd('c:/Dan/_Remote_projects/ccp-lf/files')
+setwd('c:/Dan/_Remote_projects/ccp-lf')
 
 load(file='./mcF.rda')
 load(file='./wbmc5.rda')
@@ -36,8 +37,7 @@ sharp.sm <- filter(fd4, str_detect(ExpProject, "Sharpsand SM")) %>% pull(num)
 
 #get sharpsand (IM and TH) stand data
 
-
-fires <- filter(fd4, num %in% c(sharp, sharp.th, sharp.sm)) %>% 
+sh.fires0 <- filter(fd4, num %in% c(sharp, sharp.th, sharp.sm)) %>% 
   select(fire, Date, num, ws, MC.SA, MC.SA_dens, MC.SA_season, FMC, 
          FFMC, DMC, ISI, FSG1, SFC, ROS, 
          DC, FWI, CFI1, CFI2, Site) %>%
@@ -46,7 +46,8 @@ fires <- filter(fd4, num %in% c(sharp, sharp.th, sharp.sm)) %>%
            num %in% sharp.th ~'Thin',
            num %in% sharp.sm ~'Semi-M' ),
          Plot=str_extract(fire, '\\d+') %>% as.integer) 
-fires <-  mutate(rowwise(fires), MC.SA2=wbmc(ffmc=FFMC, dmc=DMC, stand=4, density=2, season=MC.SA_season)) 
+sh.fires1 <- mutate(rowwise(sh.fires0), MC.SA2=wbmc5(ffmc=FFMC, dmc=DMC, stand=4,
+                                                    density=2, season=MC.SA_season)) 
 
 #original ccp (2019) sf formula
 sros.st <- function(isi) {
@@ -61,7 +62,7 @@ isi.mcsa <- function(mc, ws) {
   return(0.208*f_w*f_f)
 }
 
-fires <- mutate(rowwise(fires), 
+sh.fires <- mutate(rowwise(sh.fires1), 
                 isi.m=isi.mcsa(mc=MC.SA, ws=ws),
                 isi.m2=isi.mcsa(mc=MC.SA2, ws=ws))
 ```
@@ -73,34 +74,7 @@ Daniel D. B. Perrakis
 Dan K. Thompson
 
 ## Abstract
-
-Crown fire represents the most dangerous type of potential fire
-behaviour in conifer forests and predicting their onset remains
-uncertain. Many operational modelling systems rely on the C.E. Van
-Wagner (Can. J. For Res. 1977, v7: 23-34) crown fire initiation model, a
-one-dimensional equation developed from simple physical theory and
-laboratory experiments. Van Wagner's model requires a clear vertical
-separation (\> \~ 1m) between surface fuels and a relatively defined
-canopy base; any fine-textured biomass between the surface and canopy
-fuels are considered ladder fuels, generally not accounted for by the
-model but believed to be disproportionately influential in crown fire
-initiation. To date, techniques for estimating the contribution of
-ladder fuels are lacking. In this study, we show how a simple
-rearranging of Van Wagner's model, by solving for critical surface fuel
-consumption (SFC), allows for the comparison of fuel consumption at
-different vertical positions in the mid-story. This effectively allows
-ladder fuel consumption to be treated as a scaled equivalent of SFC,
-although a calibration step is required due to significant differences
-in fuel bulk density between dense surface fuelbeds and well-aerated
-ladder fuels. We used fire observations and crown fire thresholds from a
-well- documented series of experimental burns in immature jack pine
-stands to estimate a multiplier for ladder fuel loads; a second estimate
-was tested based on previously published expert opinion. These two
-analyses produced a first estimate for a multiplier of 2-3x##, meaning
-that ladder fuel consumption is about two to three times as influential
-per unit mass as compact surface fuel consumption. This method provides
-users with a simple option to evaluate ladder fuel influence in crown
-fire models or hazard reduction treatments.
+[below]
 
 ## Introduction
 
@@ -114,7 +88,7 @@ influenced by open lower atmosphere winds; this process has long been
 known to be associated with a dramatic increase in spread rate via
 several processes including flame tilt and vigorous ember spotting.
 
-(#keep?) A recent analysis of Canadian experimental burns in boreal and
+(#delete?) A recent analysis of Canadian experimental burns in boreal and
 sub-boreal conifer stands confirmed this, with the 95th percentile ROS
 in surface fires only 5 m/min#. Only tall pine stands with no understory
 conifer regeneration appeared capable of supporting surface fires under
@@ -133,8 +107,8 @@ convection theory, noted that such 'bridge fuels' consisted of
 small conifers, etc.' located above the surface fuel complex, remarking
 that such fuels needed to be 'present in sufficient quantity to
 intensify the surface fire appreciably as well as to extend the flame
-height'. While the paper describing Van Wagner's model has become a
-classic with thousands of citations, methods for quantifying the effects
+height'. While the paper describing Van Wagner's model has been cited become a
+classic (> 1500 citations as of 2023), methods for quantifying the effects
 of ladder fuels are still lacking 45 years later.
 
 Van Wagner's model was originally formulated to solve for critical
@@ -215,8 +189,8 @@ $$
 
 [5].
 
-The theoretical relationship can be examined by comparing $SFC_0$ at two
-different z values. For example, using Van Wagner's own empirical heat
+The theoretical relationship can be examined with a logical example, comparing $SFC_0$ at two 
+different z values. Using Van Wagner's own empirical heat
 of ignition function [@vanwagner1968], at 90% foliar moisture content
 (FMC) and LCBH=2 m, Equation 1 suggests $I_0$ of about 417 kW/m, the
 intensity of a low to moderate intensity surface fire. At some moderate
@@ -228,19 +202,19 @@ in fuel consumption needed for crowning, due to the much higher surface
 fire intensity required.
 
 In the case of the consumption of an elevated ladder fuel quantity
-$FC_L$ positioned at height $z_L$, in this case the vertical centroid of
+$FC_L$ positioned at height $z_L$, such as the vertical centroid of
 a cohort of standing dead trees, finding the equivalent $SFC$ value at
 ground level ($FC_G$) is then a matter of inflating its influence as we
 scale it vertically using Equation 5:
 
 $$
-FC_G=(\frac {z} {z-z_L})^{1.5} \cdot FC_L  ~~~~~~ z_L > z
+FC_G=(\frac {z} {z-z_L})^{1.5} \cdot FC_L ~~, ~~~~~~ z_L > z
 $$
 
 [6], where $z$ is the normal (ground-level) LCBH. Aside from Van
 Wagner's equation, this is simply a slightly different representation of
 Thomas' [-@thomas1963] equation for flame size under calm conditions.
-Using Equation 6, it should be possible to scale the contribution of
+Using Equation 6, it is possible to estimate the contribution of
 parts of the fuel complex based on their vertical position in the crown
 as if they were part of the surface fuel complex.
 
@@ -248,7 +222,7 @@ We note immediately two fire-related qualifiers. First, this theoretical
 relationship does not account for the obvious structural differences
 between the surface and crown fuel complexes. In particular, surface
 fuelbeds are much more compact (higher bulk density and packing ratio)
-than crown fuel complexes, with a much more aeration-limited combustion
+than crown fuel complexes, including ladder fuels, with a much more aeration-limited combustion
 environment [@keane2015; @schwilk2015]. The general FBP System approach
 to SFC, where all consumed surface and ground fuels are assumed to
 contribute to surface fire intensity, may also overemphasize dense fuels
@@ -276,29 +250,21 @@ Canadian experimental fires in conifer stands.
 
 ### Objective
 
-The objective of this study was to present a theoretical framework for
-analyzing ladder fuel influence in conifer crown fire initiation using a
-modification of Van Wagner's (1977) equation. The presented theory was
-then evaluated using the expanded set of experimental fires from
-Sharpsand Creek, Ontario, Canada, a well-known boreal jack pine study
-site, as well as by incorporating ladder fuel influence into a
-recently-published empirical crown fire initiation model. By comparing
-estimated and observed fire behaviour stands with varying ladder fuel
-densities, we assessed the effectiveness of the theoretical model for
-improving overall fire behaviour predictions.
+The objectives of this study were 1- to present a theoretical framework for
+analyzing ladder fuel influence in crown fire initiation using a simple
+reworking of Van Wagner's (1977) equation; 2- to fit simple surface rate of spread models based on Canadian experimental data; and 3- to evaluate how incorporating ladder fuel contributions to crowning compares using both theoretical and empirical models using experimental crown fire data. The presented theory was then evaluated using the expanded set of experimental fires from Sharpsand Creek, Ontario, Canada, a well-known boreal jack pine study site, as well as by incorporating ladder fuel influence into a recently-published empirical crown fire initiation model. By comparing estimated and observed fire behaviour stands with varying ladder fuel
+densities, we assessed the effectiveness of the theoretical model for improving overall fire behaviour predictions.
 
-###Get data
+###[Get data]
 
 ``````{r get.data}
 #pick which Sharp-SM fires are crown vs surface
 some.torch <- c(99)   #change 'some torching' fires to surface: 99, 101 (maybe)
 
-fires2 <- fires   #New CFI feature for shape mapping
-fires2$CFI1[which(fires2$num %in% some.torch)] <- 0   #comment if undesired
-fires2$CFI2[which(fires2$num %in% some.torch)] <- 'Surface'   #comment if undesired
-#fires2 <- mutate(fires2, CFI2=as.factor(CFI))
+#New CFI feature for shape mapping
+sh.fires$CFI1[which(sh.fires$num %in% some.torch)] <- 0   #comment if undesired
+sh.fires$CFI2[which(sh.fires$num %in% some.torch)] <- 'Surface'   #comment if undesired
 
-#fires3 <- fires2 %>% filter(Exp %in% c('Thin', 'Ctrl'))  #Not needed for now
 ```
 
 ## Methods
@@ -399,7 +365,7 @@ here only in the context of new analysis.
 scalex <- seq(2, 22, by=2)
 
 #graph with histograms: ISI
-sh.lad.histo <- ggplot(fires2, aes(x=ISI)) + 
+sh.lad.histo <- ggplot(sh.fires, aes(x=ISI)) + 
   geom_histogram(binwidth=1, aes(fill=CFI2)) + 
   facet_grid(Exp~.) +
   scale_x_continuous(breaks=scalex) +
@@ -410,7 +376,7 @@ sh.lad.histo <- ggplot(fires2, aes(x=ISI)) +
 sh.lad.histo
 
 #graph with histo: isi.m (mc.sa-based ISI, using season, density, DMC)
-sh.lad.histo2 <- ggplot(fires2, aes(x=isi.m)) + 
+sh.lad.histo2 <- ggplot(sh.fires, aes(x=isi.m)) + 
   geom_histogram(binwidth=1, aes(fill=CFI2)) + 
   facet_grid(Exp~.) +
   scale_x_continuous(breaks=scalex) +
@@ -451,20 +417,22 @@ sh.lad.histo3
 ### #Logistic regression of stand types (treatments), ISI
 
 ```{r Define CFI models for SH stands}
-fires.stat <- select(fires2, CFI1, CFI2, ISI, Exp) 
+fires.stat <- select(sh.fires, CFI1, CFI2, ISI, Exp, isi.m, isi.m2) %>%
+  ungroup()
 #%>%  mutate(CFI2=as.numeric(CFI2))
 
-#sh.mod <- glm(CFI ~ ISI + Exp, data=fires2, family='binomial')
-sh.mod2 <- glm(CFI2 ~ isi.m + Exp, data=fires2, family='binomial')
-sh.mod22 <- glm(CFI2 ~ isi.m2 + Exp, data=fires2, family='binomial')
-sh.modB <- glm(CFI2 ~ ISI + Exp, data=fires2, family='binomial') 
-sh.mod.ff <- glm(CFI2 ~ ws + MC.SA2 + Exp, data=fires2, family='binomial') 
+sh.mod <- glm(CFI1 ~ ISI + Exp, data=fires.stat, family='binomial') #base model, ISI and treatment; both sig. at alpha=0.05
+sh.mod2 <- glm(CFI1 ~ isi.m2 + Exp, data=sh.fires, family='binomial') #ISI using MC.SA, density 2 for TH, 3 for others; marg. sig. for trt (p=0.0606)
+
+
+#Use sh.mod (ISI) for log. regression graph
+#Use both for threshold values
 
 #graph with jittered scatter plot
 #Isi.seq <- seq(4, 20, by=0.1)
 
-#which model to use? sh.mod2 or sh.modB or other
-use.mod <- sh.modB
+#which model to use? sh.mod with ISI or sh.mod2 with mc.sa or other
+use.mod <- sh.mod
 
 #generate fake data for log. regression graphs
 fdata.IM <- data.frame(fISI=seq(3, 20, by=0.1), fExp='Imm') %>%
@@ -511,7 +479,7 @@ sh.isi.log <-
   geom_line(data=fdata.IM, aes(x=fISI, y=CFI), colour='red') +
   geom_line(data=fdata.SM, aes(x=fISI, y=CFI), colour='green') +
   geom_line(data=fdata.TH, aes(x=fISI, y=CFI), colour='light blue') +
-  labs(x='ISI', y='p(CFI)') #+
+  labs(x='ISI', y='p(CFO)') #+
 #  annotate('segment', x=isi.thresh.imm(), xend=isi.thresh.imm(), 
 #           y=0.4, yend=0.6, alpha=0.4, colour='red') +
 #  annotate('segment', x=isi.thresh.th(), xend=isi.thresh.th(), 
@@ -593,6 +561,18 @@ isi.thresh.semiM <- function(Exp=Semi.M) { #Imm (NA), Semi-M, or Thin
   return(isi)
 }
 
+
+#thresholds with ISI (sh.mod):
+#imm: 6.61
+#th: 10.31
+
+#thresholds with ISI.mcsa (sh.mod2):
+#imm: 6.05
+#th: 9.24
+
+#'working mean':
+#'imm': 6.3
+#'th': 9.8
 
 ```
 
@@ -998,3 +978,40 @@ conditions, the upward heat flux from individual ladder fuel elements
 is a probabilistic process. By including and scaling all of the ladder
 fuel mass in the $FC_L$, the potential exists to overpredict the ladder
 fuel influence, but this
+
+# .
+# .
+# Headings
+# Simple solutions for modelling surface fire and ladder fuels in Canadian conifer forests
+Daniel D. B. Perrakis
+Dan K. Thompson
+Steve W. Taylor
+
+##Abstract
+Predicting the onset or occurrence of conifer crown fires is an uncertain process. Several operational modelling systems rely on the C.E. Van Wagner (Can. J. For Res. 1977, v7: 23-34) crown fire initiation model derived from simple physical theory and laboratory experiments. Van Wagner's model requires a clear vertical separation between surface and canopy fuel strata, and defines fine-textured biomass located between strata as ladder fuels (LF). While the LF layer contribution to crown fire initiation is not quantified by Van Wagner's model or in most prediction systems, it is suspected to be disproportionately important. In this study, we show how a simple rearranging of Van Wagner's model reframes crown fire initiation as a critical fuel threshold-driven process. A new equation is presented for comparing fuel consumption at different vertical positions in the mid-story, effectively treating LF consumption as though these fuels were lowered to the ground level and boosted in mass. We used fire observations and crown fire thresholds from a well-documented series of experimental burns in Canadian conifer forests to fit simple surface fire models and test the thoretical LF scaling equation. Incorporating LF into empirical crown fire models improved mode results; best results were obtained with a LF multiplier of [??2-3??; draft results], suggesting that LF consumption is about two to three times as influential per unit mass as typical conifer surface fuel consumption. Resulting models will be useful for both first estimates of surface fire spread rate as well as for incorporating LF into separate crown fire models or hazard reduction treatment design. 
+
+##Intro
+Crown fires, CEVW model and ladder fuels; short lit. review (Stephens' papers, lab studies, etc.)
+###Objective
+ - Present new model, based on CEVW's CFI model, allowing for calculation of LF contribution to crown fire initiation and other variable height fuel consumption equivalency
+ - Evaluate model using data from several existing experimental datasets
+ 
+##Methods
+###Rescaling model: bringing LF to the surface
+ - Figure showing trees and LF
+ 
+###Validation 1. Use sharpsand Creek treatments and logistic regression
+Logistic regression of CFI vs ISI by TRT: CFI ~ ISI + as.factor(Treatment)
+ - Test for significant difference between treatments - ok
+ - Identify critical ISI threshold: 6.33 and 9.77
+ - Use critical ISI threshold to identify LF multiplier; 
+ 
+###Validation 2. Cruz et al. expert opinion (2004: 2 m FSG difference) to estimate  LF multiplier (works out to M=2.59)
+
+###Validation 3. Comparison of CFO models (with LF scaling, with and without multiplier) with Van Wagner's CFI model, using notional Taylor SF model
+
+##Results
+##Discussion
+ - Figure showing more complex architecture; 2-story stands, using Eq 2 to estimate contribution of surface fuels to upper stratum crowning
+ - Validation 4. Upper canopy crowning
+
