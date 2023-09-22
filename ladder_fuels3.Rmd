@@ -69,191 +69,10 @@ sh.fires <- mutate(rowwise(sh.fires1),
 
 # A Simple solution for ladder fuels {#Title, Abstract}
 
-Daniel D. B. Perrakis
-
-Dan K. Thompson
-
-## Abstract
-[below]
 
 ## Introduction
 
-Conifer forests cover most of the circumboreal region of the world and
-crown fires represent a significant fire-related hazard in these stands
-[@kneeshaw2011, @stocks1991]. As noted by ##Cruz ref. surface fires
-rarely spread \> 6 m/min under closed conifer stands, as higher spread
-rates are usually associated with some degree of crowning or torching.
-Once flames reach the upper reaches of the canopy, they can be directly
-influenced by open lower atmosphere winds; this process has long been
-known to be associated with a dramatic increase in spread rate via
-several processes including flame tilt and vigorous ember spotting.
 
-(#delete?) A recent analysis of Canadian experimental burns in boreal and
-sub-boreal conifer stands confirmed this, with the 95th percentile ROS
-in surface fires only 5 m/min#. Only tall pine stands with no understory
-conifer regeneration appeared capable of supporting surface fires under
-higher danger conditions.
-
-The element in fuel complexes that enables crown fires in most tall
-conifer stands are ladder fuels. This term refers to any easily-ignited
-fuels in the mid-canopy space, meaning fine-textured and flammable dead
-or live biomass above the surface fuel complex but below the live canopy
-base. In Canada, J.G. Wright first noted that 'crown fires are not
-likely to occur unless there is a large volume of fuel under the trees'
-[@wright1932]. Van Wagner [@vanwagner1977], in describing his classic
-crown fire initiation model based on empirical data and physical
-convection theory, noted that such 'bridge fuels' consisted of
-'combustible matter such as loose bark, dead lower branches, lichen,
-small conifers, etc.' located above the surface fuel complex, remarking
-that such fuels needed to be 'present in sufficient quantity to
-intensify the surface fire appreciably as well as to extend the flame
-height'. While the paper describing Van Wagner's model has been cited become a
-classic (> 1500 citations as of 2023), methods for quantifying the effects
-of ladder fuels are still lacking 45 years later.
-
-Van Wagner's model was originally formulated to solve for critical
-surface intensity ( $I_0$) as follows:
-
-$$
-I_0=(chz)^{1.5}
-$$
-
-[1],
-
-where $h$ is heat of ignition, $z$ is live crown base height (LCBH), and
-$c$ is a dimensional constant derived empirically. Most modelling
-systems have expressed $I_0$ using one of the commonly-used flame length
-relationships [@alexander2012] combining equation 1 it with Byram's
-[-@byram1959] fireline intensity equation in order to solve for critical
-rate of spread. This latter combination has allowed for linkages with
-Rothermel's [-@rothermel1972] semi-physical surface rate of spread model
-[e.g. @scott2001; @andrews2014], or with the empirical ROS functions
-from the FBP System fuel types [@forestrycanadafiredangergroup1992].
-Surprisingly, a simple algebraic rearranging of the terms of Van
-Wagner's model allows for a potentially powerful estimator for varying
-vertical position of fuels.
-
-### Rescaling model: bringing ladder fuel consumption to the surface
-
-Ladder fuels are defined by their fine texture and intermediate vertical position, by definition. They exist in conifer stands between
-the surface fuels, at $z=0$, and canopy fuels, which start at the live
-canopy base height (LCBH). When connected to the surface fuels and
-ignited by a proximate source (i.e. an advancing fireline), their heat
-flux contribution is much closer to the canopy base, and therefore much
-more likely to contribute to canopy ignition compared to similar fuel
-loading at the surface. The structure of the Van Wagner (1977)
-CFI model permits a vertical rescaling that relies on an implied equivalency between SFC and the inverse of z (LCBH) in Van Wagner's model.
-
-When we replace $I_0$ (Equation 1) with Byram's (1959) fireline
-intensity, we get the following well-known equation (e.g. FCFDG 1992,
-Scott and Reinhardt 2001; units omitted for simplicity):
-
-$$
-H \cdot SFC \cdot ROS=(c \cdot h)^{1.5} z^{1.5}  
-$$[2]
-
-where $H$ is the heat of combustion, $SFC$ is surface fuel consumption,
-$ROS$ is rate of forward spread, and the right side is as in Equation 1.
-
-As discussed, this relationship has previously been evaluated in terms
-of identifying critical ROS for crown fire initiation (Van Wagner 1977,
-Alexander 1988). However, if we assume that surface ROS is insensitive
-to moderate variations in LCBH, it should also hold for comparing a
-range of SFC values. Under surface fire conditions near the crown fire
-initiation threshold, critical SFC could then be defined as follows:
-
-$$
-SFC_0=\frac {(ch)^{1.5} z^{1.5}} {h \cdot ROS} 
-$$
-
-[3]
-
-Critical SFC for crown fire initiation can then be compared between LCBH
-levels, e.g. $z_1$ and $z_2$.
-
-$$
-\frac {SFC_2}{SFC_1}=
-\frac {  \left[  \frac {(ch)^{1.5} z_2^{1.5}} {h \cdot ROS} \right] } 
-{  \left[  \frac {(ch)^{1.5} z_1^{1.5}} {h \cdot ROS} \right] }
-$$
-
-[4]
-
-Again, this assumes no change in ROS with varying LCBH. Holding all
-other terms constant, we can simplify this to yield a basic relationship
-between SFC and LCBH:
-
-$$
-SFC_2=(\frac {z_2} {z_1})^{1.5} \cdot SFC_1
-$$
-
-[5].
-
-The theoretical relationship can be examined with a logical example, comparing $SFC_0$ at two 
-different z values. Using Van Wagner's own empirical heat
-of ignition function [@vanwagner1968], at 90% foliar moisture content
-(FMC) and LCBH=2 m, Equation 1 suggests $I_0$ of about 417 kW/m, the
-intensity of a low to moderate intensity surface fire. At some moderate
-surface ROS value, e.g. 3 m/min, Equation 3 gives $SFC_0$ of 0.463
-$kg \cdot m^{-2}$. Using Equation 5, increasing LCBH to 5 m without
-altering other inputs would raise $SFC_0$ to 1.83 $kg\cdot m^{-2}$ ;
-thus, a 2.5 times increase in LCBH would result in a fourfold increase
-in fuel consumption needed for crowning, due to the much higher surface
-fire intensity required.
-
-In the case of the consumption of an elevated ladder fuel quantity
-$FC_L$ positioned at height $z_L$, such as the vertical centroid of
-a cohort of standing dead trees, finding the equivalent $SFC$ value at
-ground level ($FC_G$) is then a matter of inflating its influence as we
-scale it vertically using Equation 5:
-
-$$
-FC_G=(\frac {z} {z-z_L})^{1.5} \cdot FC_L ~~, ~~~~~~ z_L > z
-$$
-
-[6], where $z$ is the normal (ground-level) LCBH. Aside from Van
-Wagner's equation, this is simply a slightly different representation of
-Thomas' [-@thomas1963] equation for flame size under calm conditions.
-Using Equation 6, it is possible to estimate the contribution of
-parts of the fuel complex based on their vertical position in the crown
-as if they were part of the surface fuel complex.
-
-We note immediately two fire-related qualifiers. First, this theoretical
-relationship does not account for the obvious structural differences
-between the surface and crown fuel complexes. In particular, surface
-fuelbeds are much more compact (higher bulk density and packing ratio)
-than crown fuel complexes, including ladder fuels, with a much more aeration-limited combustion
-environment [@keane2015; @schwilk2015]. The general FBP System approach
-to SFC, where all consumed surface and ground fuels are assumed to
-contribute to surface fire intensity, may also overemphasize dense fuels
-that burn in post-frontal combustion [#could use some more references
-and discussion on this point]. In contrast, fine crown and ladder fuels
-are much better aerated (more porous) but also vertically and
-horizontally discontinuous (refs and explanation#). This difference
-could be addressed theoretically or, as in the present investigation,
-empirically.
-
-Second, while equation 6 specifies that the ladder fuel height cannot
-exceed the LCBH, it is apparent that as the difference between them
-($z-z_L$) approaches zero, $FC_G$ grows exponentially. Thus, 0.1
-$kg \cdot m^{-2}$ of fuel consumption 1 m below a 5 m tall canopy base
-is scaled to equate to ground-level SFC of 1.12 $kg \cdot m^{-2}$ , but
-the same fuel 0.2 m below the same canopy scales to
-$FC_G=12.5~ kg \cdot m^{-2}$. The logic of this holds in a theoretical
-sense -- a fire is much more likely to bathe the lower canopy in flame
-if the burning fuel is very close below -- but suggests caution is
-needed to utilize eq. 6 in a practical sense to avoid inflating the
-ladder fuel effect to extreme, and illogical levels.
-
-The remainder of the study tests this relationship with some data from
-Canadian experimental fires in conifer stands.
-
-### Objective
-
-The objectives of this study were 1- to present a theoretical framework for
-analyzing ladder fuel influence in crown fire initiation using a simple
-reworking of Van Wagner's (1977) equation; 2- to fit simple surface rate of spread models based on Canadian experimental data; and 3- to evaluate how incorporating ladder fuel contributions to crowning compares using both theoretical and empirical models using experimental crown fire data. The presented theory was then evaluated using the expanded set of experimental fires from Sharpsand Creek, Ontario, Canada, a well-known boreal jack pine study site, as well as by incorporating ladder fuel influence into a recently-published empirical crown fire initiation model. By comparing estimated and observed fire behaviour stands with varying ladder fuel
-densities, we assessed the effectiveness of the theoretical model for improving overall fire behaviour predictions.
 
 ###[Get data]
 
@@ -584,9 +403,10 @@ Thinned: `r isi.thresh.th()` #10.29
 
 Semi-mature: `r isi.thresh.semiM()` #8.61
 
-At median WS_10 of 12.3 km /h, the IM threshold works out to FFMC of
-about 88.6; TH threshold is about FFMC of 91.8, and SM threshold is
-about FFMC of about 90.5. We will use both Van Wagner's (1977) and
+At mean WS_10 of 12.3 km /h, the IM threshold works out to FFMC of
+about 88.4 and TH threshold is about FFMC 91.45. 
+
+We will use both Van Wagner's (1977) and
 Perrakis et al's (2023) crown fire models to calibrate the SFC
 multiplier for the ladder fuel consumption using these threshold values.
 
@@ -613,7 +433,9 @@ $$SFC_e=\frac {I_0}{h \cdot ROS_{0}}$$
 
 $$SFC+FC_G \times M=\frac {I_0}{h \cdot ROS_0}$$
 
-$$M=\frac {\frac {I_0}{h \cdot ROS_0} - SFC}{FC_G}$$[7], and
+$$M=\frac {\frac {I_0}{h \cdot ROS_0} - SFC}{FC_G}$$ [7], and
+
+Is this key? Use Linear ROS model & ST ROS model and come up with ROS_0 at different ISI values (or ws, given same FFMC?). FC_G is ...###
 
 $$
 ROS_0=\frac {I_0}{h \cdot (SFC + FC_G \cdot M)}
@@ -990,14 +812,191 @@ Steve W. Taylor
 ##Abstract
 Predicting the onset or occurrence of conifer crown fires is an uncertain process. Several operational modelling systems rely on the C.E. Van Wagner (Can. J. For Res. 1977, v7: 23-34) crown fire initiation model derived from simple physical theory and laboratory experiments. Van Wagner's model requires a clear vertical separation between surface and canopy fuel strata, and defines fine-textured biomass located between strata as ladder fuels (LF). While the LF layer contribution to crown fire initiation is not quantified by Van Wagner's model or in most prediction systems, it is suspected to be disproportionately important. In this study, we show how a simple rearranging of Van Wagner's model reframes crown fire initiation as a critical fuel threshold-driven process. A new equation is presented for comparing fuel consumption at different vertical positions in the mid-story, effectively treating LF consumption as though these fuels were lowered to the ground level and boosted in mass. We used fire observations and crown fire thresholds from a well-documented series of experimental burns in Canadian conifer forests to fit simple surface fire models and test the thoretical LF scaling equation. Incorporating LF into empirical crown fire models improved mode results; best results were obtained with a LF multiplier of [??2-3??; draft results], suggesting that LF consumption is about two to three times as influential per unit mass as typical conifer surface fuel consumption. Resulting models will be useful for both first estimates of surface fire spread rate as well as for incorporating LF into separate crown fire models or hazard reduction treatment design. 
 
-##Intro
+##Introduction
 Crown fires, CEVW model and ladder fuels; short lit. review (Stephens' papers, lab studies, etc.)
-###Objective
+Conifer forests cover most of the circumboreal region of the world and
+crown fires represent a significant fire-related hazard in these stands
+[@kneeshaw2011, @stocks1991]. As noted by Cruz et al. surface fires
+rarely spread \> 6 m/min under closed conifer stands, as higher spread
+rates are usually associated with some degree of crowning or torching.
+Once flames reach the upper reaches of the canopy, they can be directly
+influenced by open lower atmosphere winds; this process has long been
+known to be associated with a dramatic increase in spread rate via
+several processes including flame tilt and vigorous ember spotting.
+
+(#delete?) A recent analysis of Canadian experimental burns in boreal and
+sub-boreal conifer stands confirmed this, with the 95th percentile ROS
+in surface fires only 5 m/min#. Only tall pine stands with no understory
+conifer regeneration appeared capable of supporting surface fires under
+higher danger conditions.
+
+The element in fuel complexes that enables crown fires in most tall
+conifer stands are ladder fuels. This term refers to any easily-ignited
+fuels in the mid-canopy space, meaning fine-textured and flammable dead
+or live biomass above the surface fuel complex but below the live canopy
+base. In Canada, J.G. Wright first noted that 'crown fires are not
+likely to occur unless there is a large volume of fuel under the trees'
+[@wright1932]. Van Wagner [@vanwagner1977], in describing his classic
+crown fire initiation model based on empirical data and physical
+convection theory, noted that such 'bridge fuels' consisted of
+'combustible matter such as loose bark, dead lower branches, lichen,
+small conifers, etc.' located above the surface fuel complex, remarking
+that such fuels needed to be 'present in sufficient quantity to
+intensify the surface fire appreciably as well as to extend the flame
+height'. While the paper describing Van Wagner's model has been cited become a
+classic (> 1500 citations as of 2023), methods for quantifying the effects
+of ladder fuels are still lacking 45 years later.
+
+Van Wagner's model was originally formulated to solve for critical
+surface intensity ( $I_0$) as follows:
+
+$$
+I_0=(chz)^{1.5}
+$$
+
+[1],
+
+where $h$ is heat of ignition, $z$ is live crown base height (LCBH), and
+$c$ is a dimensional constant derived empirically. Most modelling
+systems have expressed $I_0$ using one of the commonly-used flame length
+relationships [@alexander2012] combining equation 1 it with Byram's
+[-@byram1959] fireline intensity equation in order to solve for critical
+rate of spread. This latter combination has allowed for linkages with
+Rothermel's [-@rothermel1972] semi-physical surface rate of spread model
+[e.g. @scott2001; @andrews2014], or with the empirical ROS functions
+from the FBP System fuel types [@forestrycanadafiredangergroup1992].
+Surprisingly, a simple algebraic rearranging of the terms of Van
+Wagner's model allows for a potentially powerful estimator for varying
+vertical position of fuels.
+
+
+### Objective
+
+The objectives of this study were 1- to present a theoretical framework for
+analyzing ladder fuel influence in crown fire initiation using a simple
+reworking of Van Wagner's (1977) equation; 2- to fit simple surface rate of spread models based on Canadian experimental data; and 3- to evaluate how incorporating ladder fuel contributions to crowning compares using both theoretical and empirical models using experimental crown fire data. The presented theory was then evaluated using the expanded set of experimental fires from Sharpsand Creek, Ontario, Canada, a well-known boreal jack pine study site, as well as by incorporating ladder fuel influence into a recently-published empirical crown fire initiation model. By comparing estimated and observed fire behaviour stands with varying ladder fuel
+densities, we assessed the effectiveness of the theoretical model for improving overall fire behaviour predictions.
+
  - Present new model, based on CEVW's CFI model, allowing for calculation of LF contribution to crown fire initiation and other variable height fuel consumption equivalency
  - Evaluate model using data from several existing experimental datasets
  
 ##Methods
-###Rescaling model: bringing LF to the surface
+
+### Rescaling model: bringing ladder fuel consumption to the surface
+
+Ladder fuels are defined by their fine texture and intermediate vertical position, by definition. They exist in conifer stands between
+the surface fuels, at $z=0$, and canopy fuels, which start at the live
+canopy base height (LCBH). When connected to the surface fuels and
+ignited by a proximate source (i.e. an advancing fireline), their heat
+flux contribution is much closer to the canopy base, and therefore much
+more likely to contribute to canopy ignition compared to similar fuel
+loading at the surface. The structure of the Van Wagner (1977)
+CFI model permits a vertical rescaling that relies on an implied equivalency between SFC and the inverse of z (LCBH) in Van Wagner's model.
+
+When we replace $I_0$ (Equation 1) with Byram's (1959) fireline
+intensity, we get the following well-known equation (e.g. FCFDG 1992,
+Scott and Reinhardt 2001; units omitted for simplicity):
+
+$$
+H \cdot SFC \cdot ROS=(c \cdot h)^{1.5} z^{1.5}  
+$$[2]
+
+where $H$ is the heat of combustion, $SFC$ is surface fuel consumption,
+$ROS$ is rate of forward spread, and the right side is as in Equation 1.
+
+As discussed, this relationship has previously been evaluated in terms
+of identifying critical ROS for crown fire initiation (Van Wagner 1977,
+Alexander 1988). However, if we assume that surface ROS is insensitive
+to moderate variations in LCBH, it should also hold for comparing a
+range of SFC values. Under surface fire conditions near the crown fire
+initiation threshold, critical SFC could then be defined as follows:
+
+$$
+SFC_0=\frac {(ch)^{1.5} z^{1.5}} {h \cdot ROS} 
+$$
+
+[3]
+
+Critical SFC for crown fire initiation can then be compared between LCBH
+levels, e.g. $z_1$ and $z_2$.
+
+$$
+\frac {SFC_2}{SFC_1}=
+\frac {  \left[  \frac {(ch)^{1.5} z_2^{1.5}} {h \cdot ROS} \right] } 
+{  \left[  \frac {(ch)^{1.5} z_1^{1.5}} {h \cdot ROS} \right] }
+$$
+
+[4]
+
+Again, this assumes no change in ROS with varying LCBH. Holding all
+other terms constant, we can simplify this to yield a basic relationship
+between SFC and LCBH:
+
+$$
+SFC_2=(\frac {z_2} {z_1})^{1.5} \cdot SFC_1
+$$
+
+[5].
+
+The theoretical relationship can be examined with a logical example, comparing $SFC_0$ at two 
+different z values. Using Van Wagner's own empirical heat
+of ignition function [@vanwagner1968], at 90% foliar moisture content
+(FMC) and LCBH=2 m, Equation 1 suggests $I_0$ of about 417 kW/m, the
+intensity of a low to moderate intensity surface fire. At some moderate
+surface ROS value, e.g. 3 m/min, Equation 3 gives $SFC_0$ of 0.463
+$kg \cdot m^{-2}$. Using Equation 5, increasing LCBH to 5 m without
+altering other inputs would raise $SFC_0$ to 1.83 $kg\cdot m^{-2}$ ;
+thus, a 2.5 times increase in LCBH would result in a fourfold increase
+in fuel consumption needed for crowning, due to the much higher surface
+fire intensity required.
+
+In the case of the consumption of an elevated ladder fuel quantity
+$FC_L$ positioned at height $z_L$, such as the vertical centroid of
+a cohort of standing dead trees, finding the equivalent $SFC$ value at
+ground level ($FC_G$) is then a matter of inflating its influence as we
+scale it vertically using Equation 5:
+
+$$
+FC_G=(\frac {z} {z-z_L})^{1.5} \cdot FC_L ~~, ~~~~~~ z_L > z
+$$
+
+[6], where $z$ is the normal (ground-level) LCBH. Aside from Van
+Wagner's equation, this is simply a slightly different representation of
+Thomas' [-@thomas1963] equation for flame size under calm conditions.
+Using Equation 6, it is possible to estimate the contribution of
+parts of the fuel complex based on their vertical position in the crown
+as if they were part of the surface fuel complex.
+
+We note immediately two fire-related qualifiers. First, this theoretical
+relationship does not account for the obvious structural differences
+between the surface and crown fuel complexes. In particular, surface
+fuelbeds are much more compact (higher bulk density and packing ratio)
+than crown fuel complexes, including ladder fuels, with a much more aeration-limited combustion
+environment [@keane2015; @schwilk2015]. The general FBP System approach
+to SFC, where all consumed surface and ground fuels are assumed to
+contribute to surface fire intensity, may also overemphasize dense fuels
+that burn in post-frontal combustion [#could use some more references
+and discussion on this point]. In contrast, fine crown and ladder fuels
+are much better aerated (more porous) but also vertically and
+horizontally discontinuous (refs and explanation#). This difference
+could be addressed theoretically or, as in the present investigation,
+empirically.
+
+Second, while equation 6 specifies that the ladder fuel height cannot
+exceed the LCBH, it is apparent that as the difference between them
+($z-z_L$) approaches zero, $FC_G$ grows exponentially. Thus, 0.1
+$kg \cdot m^{-2}$ of fuel consumption 1 m below a 5 m tall canopy base
+is scaled to equate to ground-level SFC of 1.12 $kg \cdot m^{-2}$ , but
+the same fuel 0.2 m below the same canopy scales to
+$FC_G=12.5~ kg \cdot m^{-2}$. The logic of this holds in a theoretical
+sense -- a fire is much more likely to bathe the lower canopy in flame
+if the burning fuel is very close below -- but suggests caution is
+needed to utilize eq. 6 in a practical sense to avoid inflating the
+ladder fuel effect to extreme, and illogical levels.
+
+The remainder of the study tests this relationship with some data from
+Canadian experimental fires in conifer stands.
+
  - Figure showing trees and LF
  
 ###Validation 1. Use sharpsand Creek treatments and logistic regression
