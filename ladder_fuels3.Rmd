@@ -221,6 +221,8 @@ vwi <- function(fmc=100, z) {
 #ladder fuel scaling
 #Corrected!
 lf.sfc <- function(zg, zl, fcl) {
+  #zg is overstory LCBH
+  #zl is ladder fuel height, or understory fuel centroid
   fcg=(zg/(zg-zl))^1.5 * fcl
   return(fcg)
 }
@@ -308,7 +310,7 @@ fires.stat <- select(sh.fires, CFI1, CFI2, FFMC, ws, SFC,
 
 sh.mod <- glm(CFI1 ~ ISI + Exp, data=fires.stat, family='binomial') #base model, ISI and treatment; both sig. at alpha=0.05
 
-sh.mod2 <- glm(CFI1 ~ isi.m + Exp, data=fires.stat, family='binomial') #ISI using MC.SA, density 2 for TH, 3 for others; marg. sig. for trt (p=0.0606)
+sh.mod2 <- glm(CFI1 ~ isi.m + Exp, data=fires.stat, family='binomial') #ISI using MC.SA, density 2 for TH, 3 for others. Works! p < 0.05 for all
 
 ####OK - make sure to change Sharpsand 'partly thinned' plot to MC.SA_dens==3
 
@@ -321,18 +323,18 @@ sh.mod2 <- glm(CFI1 ~ isi.m + Exp, data=fires.stat, family='binomial') #ISI usin
 #Isi.seq <- seq(4, 20, by=0.1)
 
 #which model to use? sh.mod with ISI or sh.mod2 with mc.sa or other
-use.mod <- sh.mod2
+use.mod <- sh.mod
 #use.mod <- sh.mod2
 
 #generate fake data for log. regression graphs
 fdata.IM <- data.frame(fISI=seq(3, 20, by=0.1), fExp='Imm') %>%
-  mutate(CFI=predict.glm(use.mod, newdata=list(isi.m=fISI, Exp=fExp), 
+  mutate(CFI=predict.glm(use.mod, newdata=list(ISI=fISI, Exp=fExp), 
                          type='response'))
 fdata.SM <- data.frame(fISI=seq(3, 20, by=0.1), fExp='Semi-M') %>%
-  mutate(CFI=predict.glm(use.mod, newdata=list(isi.m=fISI, Exp=fExp), 
+  mutate(CFI=predict.glm(use.mod, newdata=list(ISI=fISI, Exp=fExp), 
                          type='response'))
 fdata.TH <- data.frame(fISI=seq(3, 20, by=0.1), fExp='Thin') %>%
-  mutate(CFI=predict.glm(use.mod, newdata=list(isi.m=fISI, Exp=fExp), 
+  mutate(CFI=predict.glm(use.mod, newdata=list(ISI=fISI, Exp=fExp), 
                          type='response'))
 
 mod.co<-use.mod$coefficients
@@ -369,7 +371,7 @@ sh.isi.log <-
   geom_line(data=fdata.IM, aes(x=fISI, y=CFI), colour='red') +
   geom_line(data=fdata.SM, aes(x=fISI, y=CFI), colour='green') +
   geom_line(data=fdata.TH, aes(x=fISI, y=CFI), colour='light blue') +
-  labs(x='ISI.m', y='p(CFO)') #+
+  labs(x='ISI', y='p(CFO)') #+
 #  annotate('segment', x=isi.thresh.imm(), xend=isi.thresh.imm(), 
 #           y=0.4, yend=0.6, alpha=0.4, colour='red') +
 #  annotate('segment', x=isi.thresh.th(), xend=isi.thresh.th(), 
@@ -433,26 +435,40 @@ Thinned, ISI.mcsa: #9.80
 Semi-mature, ISI: `r isi.thresh.semiM()` #8.62
 SM, ISI.mcsa: #8.95
 
-We will work with the Immature and Thinned thresholds to solve for M, using the ISI and ISI.mcsa-based crown fire occurrence and surface fire spread models. 
+We will work with the Immature and Thinned crown fire thresholds to solve for M, using a range of techniques, including expert opinion, comparing critical intensity for crowning between both stands, and the fitted ROS models.     
 
-At mean WS_10 of 12.3 km /h, the IM threshold works out to FFMC of
-about 88.7 and TH threshold is about FFMC 91.8. Using the MC.SA-based models and the same wind speed, the IM and TH thresholds work out to MC.SA values of 14.8 and 9.8, respectively.  
+The first method involves expert opinion. Cruz et al. [-@cruz2004] noted that the different stand structures between the IM and TH stands amounted to a difference in fuel strata gap of 2 m. They used 4 m for the TH stand and 2 m for the IM stand. We will use this as well as the values derived from the more precise estimates from original stand data [@walker1975] of 4.45 m (TH) and 4.36 m (IM). Using equation 6, we get $M=(\frac{4.45}{(4.45-2.36)})^{1.5}=3.107$ 
 
-Using Byram's [-@Byram1959] equation, we will use the crown fire threshold values along with the SROS models to to calibrate the SFC multiplier for ladder fuel consumption:
+Second method: Comparing I_0 between stands (see below)
+(mention third method: Using I_0 and ROS thresholds; fourth method: VW model, with credible ROS estimate).  
 
-$$I_0=h \cdot SFC \cdot ROS_0$$
-We will use the FBP System conventions for units and constants: I_0 in kW m-1, SFC in kg m-2, ROS in m min-1, and h=18,000 kJ kg-1; to convert ROS to m s-1, we also multiply by the constant 1 min/60 s  [@FCFDG 1992]. The final assumption is that the LCBH of both the Immature and Thinned stands are identical at 4.36 m. Stocks [-@stocks1987], Van Wagner [-@vanwagner1993] and the FBP System [@FCFDG 1992] all characterized  
+[Delete? At mean WS_10 of 12.3 km /h, the IM threshold works out to FFMC of
+about 88.7 and TH threshold is about FFMC 91.8. Using the MC.SA-based models and the same wind speed, the IM and TH thresholds work out to MC.SA values of 14.8 and 9.8, respectively.  ]
 
-#####
+Using Byram's [-@Byram1959] equation, we will use I_0 along with the two empirically-derived threshold ISI values for CFI to calibrate the SFC multiplier for ladder fuel consumption:
 
-Immature:
+$$I_{0}=h \cdot SFC_0 \cdot ROS$$
+We will use the FBP System conventions for units and constants: I~0~ in kW m\^{-1}, SFC in kg m\^{-2}, ROS in m min\^{-1}, and h=18,000 kJ kg\^{-1}; to convert ROS to m s\^{-1}, we multiply by the constant 1 min/60 s  [@FCFDG 1992]. We assume that the LCBH of both the Immature and Thinned stands are, for working purposes, both identical at about 4.4 m, since the experimental stands were located at the same site and differed only (to our knowledge) in the thinning treatment conducted ~15-20 years prior to burning. This is in line with a recent crown fire analysis estimating LCBH for both stands at 4.4-4.5 m [@perrakis2023]; older studies using these data also characterized LCBH as identical (4 m) in both stand types at Sharpsand Creek [@stocks1987; @vanwagner1993; @FCFDG1992; @cruz2004]. Therefore, the critical surface fire intensity for engaging the 4.4 m LCBH canopy fuels, once the ladder fuels are accounted for, should be comparable. We will also assume that a similar sROS model could be used in both stands, though we will discuss and evaluate this assumption later. 
 
-In the SH-IM stand, mean LCBH was 4.36 m, and mean SFC was 1.444
-kg/m\^2. The crowning threshold is ISI `r isi.thresh.imm()` #6.61 or ISI.m #4.70. 
-With a dead stem mean height of 3.49 m, the ladder fuel centroid $C_L=$ 1.75 m, and
-$z-z_L=$ 2.62 m. Ladder fuel consumption, based on the loading of \< 1
-cm dead roundwood (Stocks 1987), is estimated at 0.159 kg/m2. Using
-equation 6, this scales to $FC_G=$ 0.3392 kg/m2. We now define the effective SFC as  $SFC_e=SFC + FC_G \cdot M$ (actual SFC plus scaled-to-ground ladder fuel consumption times a multiplier). Thus, $SFC_e=1.444 + 0.3392 M$. Using equation 1, at mean FMC=102% and z=4.36m, $I_0=1573kW m^{-1}$.
+If $h$ is the same in both stands, then 
+$$ ROS_{0.IM} \cdot SFC_{0.IM}=ROS_{0.TH} \cdot SFC_{0.TH}$$
+
+In the IM stand, with mean SFC of 1.41 kg/m\^2, the crowning threshold was ISI `r isi.thresh.imm()` #6.61 or ISI.m #4.70. With a dead stem mean height of 3.49 m, the ladder fuel centroid $C_L=$ 1.75 m, and $z-z_L=$ 2.62 m. Ladder fuel consumption, based on the loading of \< 1 cm dead roundwood [@stocks1987], was estimated at 0.159 kg/m2. Using equation 6, this scales to FC~G~= 0.3392 kg m\^{-2}. We now define the final SFC value including ladder fuels scaled to the ground as the effective SFC, where $SFC_e=SFC + FC_G \cdot M$ (actual SFC plus scaled-to-ground ladder fuel consumption times a multiplier). Thus, $SFC_e=1.41 + 0.3392 M$. 
+
+In the TH stand, mean SFC was 1.12 and we assume the remaining dead ladder fuels represented a baseline, negligible effect. 
+ 
+[We will use a simple fitted ROS model based on Canadian experimental fire data, previously presented during the creation of the 'Conifer Pyrometrics' system. This model uses $ISI$ and $ISI^2$ as predictors:
+$$ROS_S=0.6308 + 0.056 \cdot ISI + 0.0086 \cdot ISI^2$$ ] Don't use!
+
+[Use isi.mcsa model instead]
+
+Substituting $SFC_e$ for $SFC_{0.IM}$ and solving for $M$ gives the following  algebraic solution:
+$$SFC_e=\frac {ROS_{0.TH} \cdot SFC_{0.TH}} {ROS_{0.IM}}$$
+and
+M=[[ROS_0th . SFC_0TH / ROS_0IM] -1.41]/0.3392
+
+[works with ROS_0 values below....]
+$$M=$$
 
 A rearrangement of Byram's (1959) equation using the effective SFC
 allows us to solve for M. 
