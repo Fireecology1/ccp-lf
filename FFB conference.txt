@@ -1,0 +1,9 @@
+Ladder fuels in conifer forests are recognized as a 'weak link' that can facilitate crown fire initiation; however, few techniques exist for estimating 
+their influence on crown fire occurrence. In this study, we used a re-working of the well-known CE Van Wagner (1977) crown fire initiation model to 
+derive an equivalency between surface fuel consumption (SFC) and consumption of elevated ladder fuels (LFC). The new model allows for a vertical 
+rescaling of elevated fuels in order to include LFC in operational crown fire models. The rescaling model was tested and calibrated using Canadian 
+experimental fire data showing a multiplier of about 3-4x. Thus, removing ladder fuel biomass and reducing LFC is approximately 3-4 times more 
+effective for reducing crown fire occurrence than an equivalent reduction in SFC, even aside from the difference in vertical position and fuelbed 
+characteristics. In an immature jack pine stand with abundant standing dead stems, ladder fuels appear about 6x more influential than surface fuels 
+by mass. Despite its simplicity, the new model will help managers estimate the contribution of ladder fuels to crown fire potential and target 
+mitigation treatments appropriately. 
