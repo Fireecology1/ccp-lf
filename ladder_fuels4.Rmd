@@ -649,7 +649,7 @@ Daniel D. B. Perrakis
 Dan K. Thompson
 
 ##Abstract
-Predicting the onset or occurrence of conifer crown fires is an uncertain process. Several operational modelling systems rely on the C.E. Van Wagner (Can. J. For Res. 1977, v7: 23-34) crown fire initiation model derived from simple physical theory and laboratory experiments. Van Wagner's model requires a clear vertical separation between surface and canopy fuel strata, and defines fine-textured biomass located between strata as ladder fuels (LF). While the LF layer contribution to crown fire initiation is not quantified by Van Wagner's model or in most prediction systems, it is suspected to be disproportionately important. In this study, we show how a simple rearranging of Van Wagner's model reframes crown fire initiation as a critical fuel threshold-driven process. A new equation is presented for comparing fuel consumption at different vertical positions in the mid-story, effectively treating LF consumption as though these fuels were lowered to the ground level and boosted in mass. We used fire observations and crown fire thresholds from a well-documented series of experimental burns in Canadian conifer forests to fit simple surface fire models and test the thoretical LF scaling equation. Incorporating LF into empirical crown fire models improved mode results; best results were obtained with a LF multiplier of [??2-3??; draft results], suggesting that LF consumption is about two to three times as influential per unit mass as typical conifer surface fuel consumption. Resulting models will be useful for both first estimates of surface fire spread rate as well as for incorporating LF into separate crown fire models or hazard reduction treatment design. 
+Predicting the onset of conifer crown fires is an uncertain process. Ladder fuels (LF), biomass that act as a bridge between surface and canopy fuel layers, are suspected of being disproportionately important in crown fire initiation, but are difficult to quantify and incorporate into prediction systems. In this study, we show how a simple rearranging of C.E. Van Wagner's classic model (Can. J. For Res. 1977, v7: 23-34) reframes crown fire initiation as a critical fuel threshold-driven process. A new equation is presented for comparing fuel consumption at different vertical positions, which allows a rescaling of LF consumption down to the ground level and corresponding boost in equivalent mass. To test the theoretical model, we used several sources of evidence, primarily from Canadian experimental fires. Incorporating LF into empirical crown fire models improved model predictions, and best results were obtained with a LF multiplier of [??2-3??; draft results]. This suggests that LF consumption is two to three times as influential per unit mass as conifer surface fuel consumption, even accounting for vertical position. The resulting models will be useful for improve fire behaviour predictions as well as for improving the design of hazard reduction treatments. 
 
 ##Introduction
 Crown fires, CEVW model and ladder fuels; short lit. review (Stephens' papers, lab studies, etc.)
@@ -783,9 +783,8 @@ relationship does not account for the obvious structural differences
 between the surface and crown fuel complexes. In particular, surface
 fuelbeds are much more compact (higher bulk density and packing ratio)
 than crown fuel complexes, including ladder fuels, with a much more aeration-limited combustion
-environment [@keane2015; @schwilk2015]. The general FBP System approach
-to SFC, where all consumed surface and ground fuels are assumed to
-contribute to surface fire intensity, may also overemphasize dense fuels
+environment [@rothermel1972; @keane2015; @schwilk2015]. The general FBP System approach to SFC, where all consumed surface and ground fuels are assumed to
+contribute to surface fire intensity, may overemphasize dense duff fuels
 that burn in post-frontal combustion [#could use some more references
 and discussion on this point]. In contrast, fine crown and ladder fuel strata
 are much more aerated (more porous) but also vertically and
@@ -795,17 +794,22 @@ empirically.
 
 Second, while equation 6 specifies that the ladder fuel height cannot
 exceed the LCBH, it is apparent that as the difference between them
-($z-z_L$) diminishes, $FC_G$ can grow to extreme levels. Thus, 0.1 $kg \cdot m^{-2}$ of fuel consumption 1 m below a 5 m tall canopy base scales to equate to ground-level SFC of 1.12 $kg \cdot m^{-2}$ , but the same fuel consumption 0.2 m below the same canopy scales to $FC_G=12.5~ kg \cdot m^{-2}$. The logic of this holds in a theoretical sense -- a fire is much more likely to bathe the lower canopy in flame if the burning fuel is very close below, and a 0.2 m separation is essentially showing negligible separation at the fuel particle scale; however, this suggests that caution is needed to utilize eq. 6 in a practical sense to avoid inflating the ladder fuel effect to illogical levels.
+($z-z_L$) diminishes, $FC_G$ can grow to extreme levels. Thus, 0.1 $kg \cdot m^{-2}$ of fuel consumption 1 m below a 5 m tall canopy base scales to equate to ground-level SFC of 1.12 $kg \cdot m^{-2}$ , but the same fuel consumption 0.2 m below the same canopy scales to $FC_G=12.5~ kg \cdot m^{-2}$. The logic of this holds in a theoretical sense -- a fire is much more likely to bathe the lower canopy in flame if the burning fuel is very close below, and a 0.2 m separation is essentially showing negligible separation at the fuel particle scale; however, this suggests that caution is needed to utilize equation 6 in a practical sense to avoid inflating the ladder fuel effect to illogical levels.
 
-The remainder of the study tests and discusses this theoretical relationship using previously documented Canadian experimental fire data. 
+###Ladder fuel multiplier
+
+One simple approach to the challenge of comparing high porosity ladder fuels with low porosity surface fuels is to evaluate the use of a multiplier. This would be, in the simplest sense, a value that could be used to inflate the value of $FC_L$ in order to bring it closer to comparable SFC values. Recall that SFC values in Canadian experimental fires ranged from 0.2 to 3.8 kg m^{-2} [@perrakis2023]. The value of this multiplier, M, could range from 1 (no effect) to 10 or more in the event that ladder fuel biomass and arrangement appeared to have more than an order of magnitude greater effect than surface biomass on upward heat flux and crown fire initiation.  
+
+The remainder of the study tests and discusses empirical evidence for equations 5 and 6, using previously documented Canadian experimental fire data. 
 
 ##Methods
 
-Three separate validation methods were used to evaluate the theoretical ladder fuel scaling relationship: 1) an expert opinion estimate; 2) a logistic model comparing treatment types; and 3) and empirical model  All of these relate to the stand level
+Three separate validation methods were used to evaluate the theoretical ladder fuel scaling relationship and multiplier M: 1) an expert opinion estimate; 2) a logistic model comparing treatment types; and 3) and empirical model fitting using the Canadian experimental fire dataset. All of these relate to stand level estimates of fuel structure using mean values, which is simple and operationally practical, but may mask significant impacts of within-stand heterogeneity and spatial pattern of fuel arrangement (e.g. clumping, proximity to overstory trees).
+
 
 ### Study area: Sharpsand Creek, Ontario
 
-Stand and fuel measurements were initiated in the early 1970's at this site north of Thessalon, Ontario, in advance of experimental burns conducted over a 15-year period. This resulted in 27 separate and independent experimental fire observations in three
+The first two validation methods used data from the fire experiments at Sharpsand Creek, Ontario, a  Stand and fuel measurements were initiated in the early 1970's at this site north of Thessalon, Ontario, in advance of experimental burns conducted over a 15-year period. This resulted in 27 separate and independent experimental fire observations in three
 distinct structure classes. The original unaltered stand (immature: IM) consisted
 of densely stocked jack pine natural regenerated on gravelly soil
 [@walker1975a] following the spring 1948 Mississagi fire [@stocks1973].
