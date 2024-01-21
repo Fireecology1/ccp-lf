@@ -181,7 +181,7 @@ s.fires.mod <- s.fires3 %>%
 ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
        aes(x=isi.m, y=ROS)) +  
   geom_point(aes(colour=FT, size=SFC)) +    
-  stat_smooth(method=lm, formula=y~I(x^2)-1, 
+  stat_smooth(method=lm, formula=y~I(x^2)-1, #same as sros.isim2.mod
               se=FALSE, colour='black') +    
 #  geom_point(data=s.fires.mod %>% filter(FT=='PDF'), shape=21, size=4) +
   stat_smooth(data=s.fires.con, method=lm, 
@@ -192,7 +192,7 @@ ggplot(s.fires.mod %>% filter(!is.na(SFC)),
 ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
        aes(x=ISI, y=ROS)) +  
   geom_point(aes(colour=FT, size=SFC)) +    
-  stat_smooth(method=lm, formula=y~I(x^2)-1, #same as sros.isim2.mod
+  stat_smooth(method=lm, formula=y~I(x^2)-1, #same as sros.isi2.mod
               se=FALSE, colour='black') +    
 #  geom_point(data=s.fires.mod %>% filter(FT=='PDF'), shape=21, size=4) +
   stat_smooth(data=s.fires.con, method=lm, 
@@ -214,7 +214,7 @@ sros.isim2.mod <- lm(ROS ~ I(isi.m^2)-1, data=s.fires.mod)
 #r^2=0.708 with s.fires2
 #r^2=0.766 with s.fires.mod
 
-#lm using isi.m AND SFC
+#lm using isi.m AND SFC - best simple model overall
 sros.isim2SFC.mod <- lm(ROS ~ I(isi.m^2)+SFC-1, data=s.fires.mod)
 #r^2=0.749 with s.fires2
 #r^2=0.807 with s.fires.mod
@@ -274,9 +274,10 @@ ggplot(s.fires.mod %>% filter(!is.na(SFC)),
   stat_function(fun=c6s, color='green') + 
   stat_function(fun=sros.vw, color='turquoise') +
   geom_text(x=7, y=sros.vw(7)+3, label='VW93') +
-  geom_text(x=21, y=c6s(21)-2, label='C6s') +
+  geom_text(x=21, y=c6s(21)-1, label='C6s') +
   geom_text(x=28, y=s.nls(28)-1, label='SF_CR') +
-  geom_text(x=28, y=predict(sros.isim2SFC.mod, newdata=list(isi.m=28, SFC=1))+3, label='IsaSFC')
+  geom_text(x=28, y=predict(sros.isim2SFC.mod, newdata=list(isi.m=28, SFC=1))+3, 
+            label='IsaSFC')
 
 ```
 
@@ -421,6 +422,8 @@ ggplot(data=fd.sf, aes(x=ISI, y=ROS))+
   
 ```
 
+### [Mean Absolute Error tests for models]
+
 ```{r}
 #Mean absolute error - SF model
 fd.sf.mae <- mutate(fd.sf, 
@@ -463,6 +466,8 @@ sh.both <- full_join(sh.ctrl2row, sh.th2row) %>%
 #Threshold ISI fires just enough to get over 50% prob. of CFI
 #calc. at mean SFC
 ```
+
+### [draft text]
 
 The problem with a semi-physical assessment of the Sharpsand Creek fires
 is that the fundamental relationship appears shaky based on the terms
@@ -525,7 +530,7 @@ fuel influence, but this
 
 ## Simple solutions for modelling surface fire and ladder fuels in Canadian conifer forests
 
-#### Daniel D. B. Perrakis Dan K. Thompson
+#### 
 
 ## Abstract
 
@@ -535,16 +540,16 @@ canopy fuel layers, are suspected of being disproportionately important
 in crown fire initiation, but are difficult to quantify and incorporate
 into prediction systems. In this study, we show how a simple rearranging
 of C.E. Van Wagner's classic model (Can. J. For Res. 1977, v7: 23-34)
-reframes crown fire initiation as a critical fuel threshold-driven
-process. A new equation is presented for comparing fuel consumption at
-different vertical positions, which allows a rescaling of LF consumption
-down to the ground level and corresponding boost in equivalent mass. To
-test the theoretical model, we used several sources of evidence,
-primarily from Canadian experimental fires. Incorporating LF into
-empirical crown fire models improved model predictions, and best results
-were obtained with a LF multiplier of [??2-3??; draft results]. This
-suggests that LF consumption is two to three times as influential per
-unit mass as conifer surface fuel consumption, even accounting for
+reframes crown fire initiation as a critical fuel consumption
+threshold-driven process. A new equation is presented for comparing fuel
+consumption at different vertical positions, which allows a rescaling of
+LF consumption down to the ground level and corresponding boost in
+equivalent mass. To test the theoretical model, we used several sources
+of evidence, primarily from Canadian experimental fires. Incorporating
+LF into empirical crown fire models improved model predictions, and best
+results were obtained with a LF multiplier of [??2-3??; draft results].
+This suggests that LF consumption is two to three times as influential
+per unit mass as conifer surface fuel consumption, even accounting for
 vertical position. The resulting models will be useful for improve fire
 behaviour predictions as well as for improving the design of hazard
 reduction treatments.
@@ -871,9 +876,10 @@ differed primarily by age and treatment, provided the ideal test case
 for assessing threshold crown fire conditions and ladder fuel effects.
 We first used logistic regression to compare the crown fire thresholds
 between treatments [in terms of ISI, the Initial Spread Index;
-@vanwagner1987]. We then evaluated the existence of a multiplier effect
-(M) using Byram's I_0 with a a few simple surface ROS models, and
-solving for M using the crowning threshold values.
+@vanwagner1987]. We then evaluated the crowning thresholds in terms of
+critical FC to solve for the multiplier effect (M). This involved using
+Byram's [-@byram1959] fireline intensity along with predicted ROS using
+fitted surface ROS models, and solving for M using the threshold values.
 
 #### Estimation 3 - empirical fitting using a crown fire model
 
@@ -986,55 +992,26 @@ summary(multcomp::glht(use.mod,
 
 ```
 
-#### Crowning thresholds, Sharpsand Creek
+#### Crowning thresholds and critical FC, Sharpsand Creek
 
 For the second multiplier estimation method, we first tested the ISI
 crowning threshold between treatments (comparing IM, TH, and SM stands
-as treatments). Based on the logistic regression model, ISI and
-treatment both appeared to be significant predictors of crown fire
-success at the ⍺=0.05 level, with the Immature treatment is the base
-case. Note that a post-hoc Tukey multiple comparison test revealed that
-apparent difference between IM and TH treatments was marginal at best
-(p=0.102), which is not unexpected with such small treatment group
-sizes; other pairwise contrasts were non-significant (p\>0.2 for all
-other pairs). Nonetheless, we used this model to identify the most
-likely ISI crowning thresholds between treatments (Figure XX). This
-produced the three logistic curves shown in Figure X. By solving for
-p=0.5 (50% probability), we calculated the three crown fire transition
-thresholds as follows:
+as treatments).
+
+Based on the logistic regression model, ISI and treatment both appeared
+to be significant predictors of crown fire success at the ⍺=0.05 level,
+with the Immature treatment is the base case. Note that a post-hoc Tukey
+multiple comparison test revealed that apparent difference between IM
+and TH treatments was marginal at best (p=0.102), which is not
+unexpected with such small treatment group sizes; other pairwise
+contrasts were non-significant (p\>0.2 for all other pairs).
+Nonetheless, we used this model to identify the most likely ISI crowning
+thresholds between treatments (Figure XX). This produced the three
+logistic curves shown in Figure X. By solving for p=0.5 (50%
+probability), we calculated the three crown fire transition thresholds
+as follows:
 
 ```{r Log-CFI graph, define functions}
-#Main ISI-CFI graph with jittered data
-
-sh.isi.log <- 
-  ggplot(fires.stat, aes(y=CFI1, x=isi.m))+
-  #scale_shape_manual(values=c(23, 22, 21)) +   #pick nice shapes 
-  theme_classic() +
-  scale_fill_manual(values=c('red', 'green', 'blue'))+
-  scale_shape_manual(values=c(21, 23)) + 
-  geom_jitter(aes(fill=Exp, colour=Exp, shape=CFI2), 
-              size=2.5, width=0, height = 0.02, alpha=0.4) +  
-  geom_line(data=fdata.IM, aes(x=fISI, y=CFI), colour='red') +
-  geom_line(data=fdata.SM, aes(x=fISI, y=CFI), colour='green') +
-  geom_line(data=fdata.TH, aes(x=fISI, y=CFI), colour='light blue') +
-  labs(x='ISI', y='p(CFO)') #+
-#  annotate('segment', x=isi.thresh.imm(), xend=isi.thresh.imm(), 
-#           y=0.4, yend=0.6, alpha=0.4, colour='red') +
-#  annotate('segment', x=isi.thresh.th(), xend=isi.thresh.th(), 
-#           y=0.4, yend=0.6, alpha=0.6, colour='light blue') 
-  
-sh.isi.log
-
-#Solve for I0 with vw77? 
-#Turn difference in threshold ISI into I0
-#use surface fire spread model
-#solve for ROS_0
-
-
-
-```
-
-```{r cf thresholds}
 #get cf thresholds (p=0.5); see prev. code chunk for derivation
 isi.thresh.im <-  
   -(mod.co[[1]])/mod.co[[2]]  #
@@ -1060,7 +1037,45 @@ isi.thresh.th <-
 #'imm': 6.3
 #'th': 9.8
 
+
+#Main ISI-CFI graph with jittered data
+
+sh.isi.log <- 
+  ggplot(fires.stat, aes(y=CFI1, x=isi.m))+
+  #scale_shape_manual(values=c(23, 22, 21)) +   #pick nice shapes 
+  theme_classic() +
+  scale_fill_manual(values=c('red', 'green', 'blue'))+
+  scale_shape_manual(values=c(21, 23)) + 
+  geom_jitter(aes(fill=Exp, colour=Exp, shape=CFI2), 
+              size=2.5, width=0, height = 0.02, alpha=0.4) +  
+  geom_line(data=fdata.IM, aes(x=fISI, y=CFI), colour='red') +
+  geom_line(data=fdata.SM, aes(x=fISI, y=CFI), colour='green') +
+  geom_line(data=fdata.TH, aes(x=fISI, y=CFI), colour='light blue') +
+  labs(x='ISI', y='p(CFO)') +
+  annotate('segment', x=isi.thresh.im, xend=isi.thresh.im, 
+           y=0.4, yend=0.6, alpha=0.4, colour='red') +
+  annotate('segment', x=isi.thresh.th, xend=isi.thresh.th, 
+           y=0.4, yend=0.6, alpha=0.6, colour='light blue') 
+  
+sh.isi.log
+
+#Solve for I0 with vw77? 
+#Turn difference in threshold ISI into I0
+#use surface fire spread model
+#solve for ROS_0
+
+
+
 ```
+
+```{r cf thresholds}
+
+```
+
+Crowning thresholds, as shown in the figure, were #inline code thresh.
+
+We then looked at what surface ROS values would tend to occur (in the
+absence of crowning) under conifer stands.
 
 ## Discussion
 
