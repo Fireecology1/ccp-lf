@@ -1,0 +1,40 @@
+
+
+Matt - 
+
+Fuel Trts - FBP/C6 to CFIS to ConPyro  
+CanFIRE?
+
+Q for Marty:
+Cruz et al. 2005: "The CBD can be calculated directly (Cruz et al. 2003a), estimated (i.e., assigned 
+nominal value from local knowledge), or inferred by other means (e.g., Riano et al. 2003; Keane et al. 2005; 
+Scott and Reinhardt 2005)."
+
+Cruz 2003a is IJWF article - canopy fuel stratum characteristics
+
+"From the assumption that conifer needles are the main aerial fuel consumed within the flaming 
+front of a crown fire, canopy fuel properties are based on the quantification of live needle 
+foliage. Nevertheless, the authors recognize that, in certain fuel complexes, other fine fuels 
+such as fine live and dead twigs, lichens and bark flakes might significantly contribute to the 
+energy released within the zone of flaming combustion (Call and Albini 1997; Agee et al. 2002). 
+No quantitative description of these fuels was available in the datasets/models used in this 
+study, and consequently they were not included in the analysis."
+
+Alexander et al. 2006 (CFIS conference paper):
+"In practical terms the CBD is a function of the mass of needle foliage and small branchwood 
+divided by the depth of the crown fuel layer which is in turn the difference between the stand 
+height and the CBH (Cruz et al., 2003a)."
+
+Alexander and Cruz (2016) - Crown fire dynamics paper
+Box 4: "The CFL represents the quantity of crown fuel typically consumed in a crown fire,
+principally needle foliage."
+p. 191 "When a fire in a conifer forest stand crowns, additional fuel is consumed primarily 
+in the form of needle foliage (Wendel 1960) but also mosses and lichens, bark flakes, and small 
+woody twigs. Empirical data on the latter fuel component are limited to a single study (Stocks 
+et al. 2004b)."
+
+US (FuelCalc - Reinhardt et al. 2006)
+"Available canopy fuel load — Available canopy fuel load is assumed to be all the foliage and 
+one-half of the 0-.25” branch material in the stand. We use Brown’s (1978) equations for 
+estimating the weight of foliage and small (0-1/4”) branchwood for each tree from species and 
+diameter."

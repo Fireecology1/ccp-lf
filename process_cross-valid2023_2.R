@@ -13,7 +13,7 @@ sharp <- filter(fd4, str_detect(ExpProject, "Sharpsand IM")) %>%
   pull(num)  #original Sharpsand Immature stands only
 sharp.sm <- filter(fd4, str_detect(ExpProject, "Sharpsand SM")) %>% 
   pull(num)  #Sharpsand - immature
-
+icfme <- 77:87 #order is A, 1, 3, 4, 5, 6, 7, 8a, 8b, 9, 2; fixed in icfme process
 
 #Cross-validation 
 #
@@ -22,11 +22,14 @@ sharp.sm <- filter(fd4, str_detect(ExpProject, "Sharpsand SM")) %>%
 require(vtreat)
 
 #Number of loops for cross-validation (~20 for testing; 1000 for production)
-Times=1000
+Times=100
 nSplits=4
 
+#chg names so that models can work
+fd4$FSG <- fd4$FSG1
+fd4$CFI <- fd4$CFI1
 
-
+fd4 <- filter(fd4, num <=113)
 
 #fmlaFF is ffmc model
 fComplex <- formula(CFI ~ ws + I(FSG^1.5) * I(log(SFC)) + ws:MC.SA + I(FSG^1.5):MC.SA + I(log(SFC)):MC.SA)
@@ -48,7 +51,7 @@ f8 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.SA)
 fd5 <- fd4
 fd5$FSG[sharp] <- fd4$FSG[sharp]-2
 fd5$FSG[sharp.sm] <- fd4$FSG[sharp.sm]-1
-fd5$FSG[sharp.th] <- fd4$FSG[sharp.th]-0.25  #not always used
+fd5$FSG[sharp.th] <- fd4$FSG[sharp.th]-0.3  #not always used
 fd5$FSG[icfme] <- filter(fd5, num %in% icfme) %>% 
   mutate(FSG=case_when(
     FSG > 2 ~ FSG-1, 
@@ -59,12 +62,13 @@ f9 <- formula(CFI ~ ws + I(FSG^1.5) + SFC.CLS + ws:MC.FFMC)  #maybe use MC.SA as
 f10 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.FFMC)
 f11 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.SA)
 
-#new - still with fd5
+#new - still with fd5  f12 or f11.b
+f11.b <- formula(CFI ~ ws + I(FSG^2) + I(log(SFC)) + ws:MC.SA)  #FSG^2
 f12 <- formula(CFI ~ ws + I(FSG^2) + I(log(SFC)) + ws:MC.SA)  #used to be f11.b
 
 #new - fd4
-f0 <- formula(CFI ~ ws + FSG)
-f0.5 <- formula(CFI ~ ws + FSG + MC.FFMC)
+f0 <- formula(CFI ~ ws + FSG)  #model A
+f0.5 <- formula(CFI ~ ws + FSG + MC.FFMC)  #model B
 
 #start with fd4, then calculate SFC2=SFC + SFC.LF
 #Compare with base models (e.g. M7, M8)
@@ -82,7 +86,7 @@ f14 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC2)) + ws:MC.SA)
 
 #Crap getting myself confused!! Incomplete Nov. 11 2023
 
-(fd5$FSG[sharp.th] %>% mean() / (fd5$FSG[sharp.th] %>% mean() - fd5$FSG[sharp] %>% mean()))^1.5
+#(fd5$FSG[sharp.th] %>% mean() / (fd5$FSG[sharp.th] %>% mean() - fd5$FSG[sharp] %>% mean()))^1.5
 #C & A simplest assumption: LCBH=4, FSG=2 (z=4, z-zL=2)
 #(4/(4-2))^1.5
 #2.8284
@@ -98,13 +102,14 @@ f14 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC2)) + ws:MC.SA)
 #Equivalent doesn't work as well
 #(fd4$FSG[sharp.sm] %>% mean() / (fd5$FSG[sharp.sm] %>% mean()))^1.5
 #1.3689 
-M = 2.5   #or so?
+M = 3 #or so? See below
 
 fd7 <- fd4 %>% 
   mutate(SFC3 = SFC + SFC.LF*M)
 
 f15 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC3)) + ws:MC.FFMC)
 f16 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC3)) + ws:MC.SA)
+
 
 #forms <- c(f1, f2, f3, f4, f5, f6, f7, f8)
 
@@ -174,6 +179,52 @@ fd.m16 <- mutate(fd7, Pr_CFI=round(preds.m16, digits=4),
                  Corr=round(Pr_CFI, digits=0)==CFI)
 acc.m16 <- nrow(filter(fd.m16, Corr==TRUE))/nrow(fd4)
 
+#Trying to fit M using variations on old models 5, 6
+#get previously fitted coefficients (from Perrakis et al. 2023, SuppMat)
+
+f5c.intercept<- -4.8496
+fd4.m5 <- mutate(fd4, 
+                 linCombo=f5c.intercept + 1.2658*ws + -0.397*FSG^1.5 + 
+                   (-0.0662*MC.FFMC*ws) + 1.7128*SFC)
+
+#All assigned coefficients and intercept become lumped into a linear combination variable, which is
+#like the new intercept
+
+f5con <- formula(CFI ~ linCombo -1 + SFC.LF)
+
+#Model is fitted to last remaining variable, SFC.LF
+model5con <- glm(formula=f5con, data=fd4.m5, family=binomial)
+#4.2227/1.7128=2.465
+
+#model6:
+f6c.intercept<- -3.8869
+fd4.m6 <- mutate(fd4, 
+                 linCombo=f6c.intercept + 1.0597*ws + -0.38*FSG^1.5 + 
+                   (-0.0493*MC.SA*ws) + 1.3516*SFC)
+
+f6con <- formula(CFI ~ linCombo -1 + SFC.LF)
+
+#Model is fitted to last remaining variable, SFC.LF
+model6con <- glm(formula=f6con, data=fd4.m6, family=binomial)
+#5.8251/1.3516 = 4.31  #fitted coefficient for LF divided by previously fitted coef. for SFC
+
+#ok, around 3 should be optimal
+
+preds.m5con <-predict(model5con, type="response")
+fd.m5con <- mutate(fd4.m5, Pr_CFI=round(preds.m5con, digits=4), 
+                   Corr=round(Pr_CFI, digits=0)==CFI)
+acc.m5con <- nrow(filter(fd.m5con, Corr==TRUE))/nrow(fd4)
+
+
+preds.m6con <-predict(model6con, type="response")
+fd.m6con <- mutate(fd4.m6, Pr_CFI=round(preds.m6con, digits=4), 
+                 Corr=round(Pr_CFI, digits=0)==CFI)
+acc.m6con <- nrow(filter(fd.m6con, Corr==TRUE))/nrow(fd4)
+
+
+
+
+
 #Get coefs
 m7 <- model7$coefficients 
 m8 <- model8$coefficients 
@@ -186,7 +237,7 @@ m15 <- model15$coefficients
 m16 <- model16$coefficients
 
 #accuracy for sf/cf per model
-mods <- list(fd.m7, fd.m8, fd.m9, fd.m10, fd.m11)
+mods <- list(fd.m7, fd.m8, fd.m9, fd.m10, fd.m11, fd.m13, fd.m14, fd.m15, fd.m16)
 true.cf <- NULL
 true.sf <- NULL
 
@@ -199,17 +250,17 @@ for(i in 1:length(mods)) {
 }
 
 true.ft <- data.frame(true.cf, true.sf) %>%
-  mutate(model=c('m7', 'm8', 'm9', 'm10', 'm11')) #expand to m15 as needed
+  mutate(model=c('m7', 'm8', 'm9', 'm10', 'm11', 'm13', 'm14', 'm15', 'm16')) #expand to m15 as needed
 
 #Get model coefficients
-model.coefs0 <- tibble(m7, m8, m10, m11) %>% t() #transpose for table
+model.coefs0 <- tibble(m7, m8, m10, m11, m13, m14, m15, m16) %>% t() #transpose for table
 modNames <- model.coefs0[,1] %>% names   #clunky, but works; note - treats all vars like m7 (no FFMC)
 
 vars <- names(m7)
 
 model.coefs <- as.data.frame(model.coefs0)
 colnames(model.coefs) <- vars
-row.names(model.coefs) <- 1:4
+row.names(model.coefs) <- 1:8
 
 #Good for most models - grab coefficients
 model.coefs <- model.coefs %>% 
@@ -223,27 +274,31 @@ m7sig <- summary(model7)$coefficients[,4]  #get p-values for each estimate
 m8sig <- summary(model8)$coefficients[,4]
 m10sig <- summary(model10)$coefficients[,4]
 m11sig <- summary(model11)$coefficients[,4]
+m13sig <- summary(model13)$coefficients[,4]
+m14sig <- summary(model14)$coefficients[,4]
+m15sig <- summary(model15)$coefficients[,4]
+m16sig <- summary(model16)$coefficients[,4]
 
-m9sig <- summary(model9)$coefficients[,4] #p-vals for m9; has extra SFC variable 
-
-sig.vals0 <- data.frame(m7sig, m8sig, m10sig, m11sig) %>%
+sig.vals0 <- data.frame(m7sig, m8sig, m10sig, m11sig, m13sig, m14sig, m15sig, m16sig) %>%
   t() #transpose for table
 
 sig.vals1 <- as.data.frame(sig.vals0)
-row.names(sig.vals1) <- 1:4  #normal row numbers
+row.names(sig.vals1) <- 1:8  #normal row numbers
 colnames(sig.vals1) <- c('sI', 'sw', 'sF', 'sC', 'sM')
 
 sig.vals <- select(sig.vals1, sI, sw, sF, sM, sC) %>%
   signif(3) %>%
   mutate(model=modNames) 
 
-aic.vals <- c(model7$aic, model8$aic, model10$aic, model11$aic)
-mod.list <- list(model7, model8, model10, model11)
+aic.vals <- c(model7$aic, model8$aic, model10$aic, model11$aic, model13$aic, 
+              model14$aic, model15$aic, model16$aic)
+mod.list <- list(model7, model8, model10, model11, model13, model14, model15, model16)
 nag.full <- lapply(mod.list, rcompanion::nagelkerke)
 
-
 nagR2 <- NULL
-for(i in 1:4) {nagR2=c(nagR2, nag.full[[i]][2][[1]][3])} %>% unlist()  #nagR2 becomes vector of Nagelkerke R2 values for models 
+for(i in 1:8) {
+  nagR2=c(nagR2, nag.full[[i]][2][[1]][3])} %>% 
+  unlist()  #nagR2 becomes vector of Nagelkerke R2 values for 8 models
 
 aic.df <- data.frame(model=c(modNames), aic.vals=signif(aic.vals, 3), nagR2=signif(nagR2, 3)) 
 
@@ -258,7 +313,8 @@ sig.stars <- function(x) {
 
 mod.table <- left_join(model.coefs, sig.vals, by='model') %>%
   select(model, I, sI, ws, sw, 'FSG^1.5', sF, 'ws X mc', sM, 'log(SFC)', sC) %>%
-  mutate(Acc = c(acc.m7, acc.m8, acc.m10, acc.m11) %>% signif(3)) %>%
+  mutate(Acc = c(acc.m7, acc.m8, acc.m10, acc.m11, acc.m13, acc.m14, acc.m15, acc.m16) %>% 
+           signif(3)) %>%
   left_join(aic.df, by='model') %>%
   left_join(true.ft, by='model') %>% #not sure if I need this; not kept in table 
   mutate(sI.s=sig.stars(sI),
@@ -269,36 +325,8 @@ mod.table <- left_join(model.coefs, sig.vals, by='model') %>%
   select(model, I, sI.s, ws, sw.s, 'FSG^1.5', sF.s, 'ws X mc', sM.s, 'log(SFC)',
          sC.s, Acc, aic.vals, nagR2)  #keep Acc or true.cf; not both
 
-#m9:  
-mod.table[nrow(mod.table)+1,1] <- 'm9x'
-mod.table[nrow(mod.table)+1,1] <- 'm9'
-
-
-m9.clean <- m9[c(1, 2, 3, 6, 4, 5)] %>% signif(5)
-
-m9.sig1 <- signif(m9sig, 3)
-m9.sig2 <- m9.sig1[c(1, 2, 3, 6, 4, 5)] %>% 
-  sig.stars()
-names(m9.sig2) <- c('sI.s', 'sw.s', 'sF.s', 'sM.s', 'sC2.s', 'sC3.s')  #careful with the order
-
-m9.clean[7] <- acc.m9 %>% signif(3)
-m9.clean[8] <- model9$aic %>% signif(3)
-m9.clean[9] <- rcompanion::nagelkerke(model9)[[2]][3] %>% signif(3)
-
-names(m9.clean) <- c('I', 'ws', 'FSG^1.5', 'ws X mc', 'SFC.C2', 'SFC.C3', 'Acc', 'aic.vals', 'nagR2')
-
-mod.table[6,c(2, 4, 6, 8, 10)] <- m9.clean[1:5]
-mod.table[6, c(3, 5, 7, 9, 11)] <- m9.sig2[1:5]  
-mod.table[6, 12:14] <- m9.clean[7:9] 
-mod.table <- mutate(mod.table, SFC.C3=NA, sC3.s=NA) %>% select(everything(), Acc, aic.vals, nagR2)
-mod.table[6, 15] <- m9.clean[6]
-mod.table[6, 16] <- m9.sig2[6]
-
-mod.table.out <- select(mod.table, 1:11, SFC.C3, sC3.s, Acc, aic.vals, nagR2)
 
 #######################
-
-
 
 
 #Monte Carlo Cross-Validation
@@ -895,7 +923,7 @@ for(rep in 1:Times) {
 
 #TO HERE FOR Empirical CFI Update####################################
 
-#12: f12 - Note data=fd6
+#12: f12 - Not used?? Same as f11.b
 form=f12
 fd.xv <- fd6 %>% select(num, fire, ws, MC.SA, MC.FFMC, SFC.CLS, FSG, SFC, SFC2, SFC.LF, CFI)
 
@@ -937,7 +965,7 @@ for(rep in 1:Times) {
 #end big loop; 
 
 
-#13: f13 - Note data=fd6
+#13: f13 - Note data=fd6, SFC2
 form=f13
 fd.xv <- fd6 %>% select(num, fire, ws, MC.SA, MC.FFMC, SFC.CLS, FSG, SFC, SFC2, SFC.LF, CFI)
 
@@ -979,9 +1007,9 @@ for(rep in 1:Times) {
 #end big loop; 
 
 
-#14: f14 - Note data=fd7, SFC3
+#14: f14 - Note data=fd6, SFC2 
 form=f14
-fd.xv <- fd7 %>% select(num, fire, ws, MC.SA, MC.FFMC, SFC.CLS, FSG, SFC, SFC3, SFC.LF, CFI)
+fd.xv <- fd6 %>% select(num, fire, ws, MC.SA, MC.FFMC, SFC.CLS, FSG, SFC, SFC2, SFC.LF, CFI)
 
 for(rep in 1:Times) {
   splitPlan <- kWayCrossValidation(nrow(fd.xv), nSplits, NULL, NULL)
@@ -1062,6 +1090,48 @@ for(rep in 1:Times) {
 }
 #end big loop; 
 
+#16: f16 - Note data=fd7, SFC3
+form=f16
+fd.xv <- fd7 %>% select(num, fire, ws, MC.SA, MC.FFMC, SFC.CLS, FSG, SFC, SFC3, SFC.LF, CFI)
+
+for(rep in 1:Times) {
+  splitPlan <- kWayCrossValidation(nrow(fd.xv), nSplits, NULL, NULL)
+  
+  # initialize the prediction vector
+  xx <- .Random.seed
+  fd.xv$predxv <- 0  
+  
+  for(i in 1:4) {
+    split <- splitPlan[[i]]
+    model <- glm(formula=form, data = fd.xv[split$train, ], 
+                 family=binomial(link="logit"))
+    fd.xv$predxv[split$app] <- predict.glm(model, newdata = fd.xv[split$app, ],
+                                           type="response")
+  }
+  
+  fdxv<-mutate(fd.xv, predxv=round(predxv, digits=4)) %>%
+    mutate(CorrXv=round(predxv, digits=0)==CFI)
+  
+  aic[rep]<-model$aic
+  correct[rep]<-nrow(filter(fdxv, CorrXv==TRUE))/nrow(fdxv)
+  ##
+  #Confusion matrix and Matthews correlation coefficient (mcc)
+  tp<-nrow(filter(fdxv, CorrXv==TRUE & CFI==1))  #TRUE crown fires
+  tn<-nrow(filter(fdxv, CorrXv==TRUE & CFI==0))  #TRUE surface fires
+  fp<-nrow(filter(fdxv, CorrXv==FALSE & CFI==1))  #FALSE missed crown fires
+  fn<-nrow(filter(fdxv, CorrXv==FALSE & CFI==0))  #FALSE missed surface fires
+  mcc[rep]<-(tp*tn-fp*fn)/sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))
+  
+  #rename for each
+  model.p <- model
+  correct.p <- mean(correct)
+  mcc.p <- mean(mcc)
+  aic.p <- mean(aic)
+  seed.p <- xx
+}
+#end big loop; 
+
+
 #End all
 
 #Bring results to summary table - AllFigs script
@@ -1075,14 +1145,16 @@ CFI.letters <- rep(model.order, each=length(metrics))
 
 #CFI.models <- str_c(metrics, CFI.letters)
 
-#latest version 
+#latest version - no .l (duplicate of kb/11.b removed); jumps from .kb to .m
 accuracy.vals <- c(correct.0, correct.05, correct.a, correct.b, correct.c, correct.d, correct.e, correct.f, correct.g, correct.h, 
-                   correct.i, correct.j, correct.k, correct.kb, correct.l, correct.m, correct.n, correct.o)
-mcc.vals <- c(mcc.0, mcc.05, mcc.a, mcc.b, mcc.c, mcc.d, mcc.e, mcc.f, mcc.g, mcc.h, mcc.i, mcc.j, mcc.k, mcc.kb, mcc.l, mcc.m, 
-              mcc.n, mcc.o)
-aic.vals <- c(aic.0, aic.05, aic.a, aic.b, aic.c, aic.d, aic.e, aic.f, aic.g, aic.h, aic.i, aic.j, aic.k, aic.kb, aic.l, aic.m,
-              aic.n, aic.o)
-modelform <- c(f0, f0.5, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f11.b, f12, f13, f14, f15) 
+                   correct.i, correct.j, correct.k, correct.kb, correct.m, correct.n, correct.o, correct.p) 
+mcc.vals <- c(mcc.0, mcc.05, mcc.a, mcc.b, mcc.c, mcc.d, mcc.e, mcc.f, mcc.g, mcc.h, mcc.i, mcc.j, mcc.k, mcc.kb, mcc.m, 
+              mcc.n, mcc.o, mcc.p)
+aic.vals <- c(aic.0, aic.05, aic.a, aic.b, aic.c, aic.d, aic.e, aic.f, aic.g, aic.h, aic.i, aic.j, aic.k, aic.kb, aic.m,
+              aic.n, aic.o, aic.p)
+modelform <- c(f0, f0.5, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f11.b, f13, f14, f15, f16) 
+runnum <- c('f0', 'f0.5', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f11.b', 
+  'f13', 'f14', 'f15', 'f16')
 Dataset <- c(rep('1.Base', times=10), rep('2.FSG Adj.', times=4), rep('3.LF to SFC', times=2),
              rep('3.LF x M to SFC', times=2))  
 
@@ -1098,6 +1170,7 @@ reorder <- 1:18 #reorder <- c(4, 3, 2, 1, 6, 8, 9, 10, 11, 5, 12, 13, 7)  #huge 
 
 #Full table summary, comparing all models
 XV.summary <- data.frame(model.order, reorder, Model=as.character(modelform) %>% str_replace('CFI ~ ', ''), 
+                         runnum, 
                          Accuracy=round(accuracy.vals, 4), MCC=round(mcc.vals, 4), AIC=round(aic.vals, 2), 
                          Dataset) %>%
   mutate(MCC.rank=rank(length(MCC) + 1 - rank(MCC)),  #isn't there a descending rank function?
@@ -1120,9 +1193,10 @@ XV.summary <- mutate(XV.summary,
 #changed to '_2' Apr 10, 2023 after adding 3 PNFI-RP fires
 #Changed to '_3' on May 28, 2023 after changing sharp-SM SFC to estimate CFC portion
 #Changed to '_4' on July 13, 2023 after fixing small errors in Sharp-SM SFC
+#Added '_5' on Dec 6 2023 after solving for M using 'linearCombo' method
 #fixed LF calculations (fd_current _process2) and reran. fire_data_may2023b.csv has corrections
 
-#write.csv(XV.summary, './tables/xv_summary4.csv')
+#write.csv(XV.summary, './tables/xv_summary5.csv')
 #write.csv(XV.sum.simple, './tables/xv_sum_simple4.csv')
 
 seeds <- list(seed.a, seed.b, seed.c, seed.d, seed.e, seed.f, seed.g, seed.h, seed.i, seed.j, seed.k, seed.kb, seed.l, 
@@ -1130,7 +1204,7 @@ seeds <- list(seed.a, seed.b, seed.c, seed.d, seed.e, seed.f, seed.g, seed.h, se
 
 #write.csv(seeds, 'seeds4.csv')
 
-#Final model output
+#Final model output - WTF? why m16
 model16 <- glm(f15, data=fd7, family=binomial)
 final.mod <- model16
 

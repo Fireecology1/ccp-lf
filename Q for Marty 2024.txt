@@ -1,0 +1,18 @@
+Question for M Jan 2024:
+
+-CBD in papers defined as 'for practical purposes', foliage plus 0-0.5 cm branchwood. Americans
+(e.g. Reinhardt et al. 2006 - FuelCalc) also use this, suggesting foliage plus 1/2 of 1 hr load
+size branchwood
+But ICFME showed CFC of about 2x foliar FC. 
+-But canopy fuel calculator only uses foliar FC. How to reconcile this?
+
+-Ladder fuel calcs
+Sapling calculations, e.g. defining LFC at crown centroid position - false SFC
+Scaling actual SFC upward (thereby reducing FC value to something comparable to ladder false SFC)
+Using a scaling equation to compare heat flux equivalent between live foliage and dead fuel
+Adding together LfSFC and GfSFC
+
+-If crown fire is predicted in lower cohort, but not predicted to involve upper canopy, consider
+as passive midstory crown fire for spread rate purposes
+
+------------------
