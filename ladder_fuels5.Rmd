@@ -15,7 +15,7 @@ editor_options:
     wrap: 72
 ---
 
-### [Get data]
+### [Set environment, get data]
 
 ```{r get.data, include=FALSE}
 .libPaths("C:/Dan/RPackages")
@@ -73,8 +73,10 @@ sh.fires0 <- filter(fd4, num %in% c(sharp, sharp.th, sharp.sm)) %>%
          Plot=str_extract(fire, '\\d+') %>% as.integer) #extract num. from string
 
 sh.fires1 <- mutate(rowwise(sh.fires0), 
-                    MC.SA2=wbmc5(ffmc=FFMC, dmc=DMC, stand=4,                                           density=2, season=MC.SA_season)) #MC.SA_dens=2
-
+                    MC.SA2=wbmc5(ffmc=FFMC, dmc=DMC, stand=4, 
+                                 density=2, season=MC.SA_season)) 
+                #MC.SA2 assumes density of 2 for all
+                      
 #alternate isi, using mcSA and wind speed:
 isi.mcsa <- function(mc, ws) {
   #m = 147.2*(101-ffmc)/(59.5+ffmc)  #original mc from FFMC (mcF) formula
@@ -86,8 +88,9 @@ isi.mcsa <- function(mc, ws) {
 
 #main dataframe for threshold analysis - Sharpsand fires
 sh.fires <- mutate(rowwise(sh.fires1), 
-                isi.m=isi.mcsa(mc=MC.SA, ws=ws),
-                isi.m2=isi.mcsa(mc=MC.SA2, ws=ws))
+                isi.m=isi.mcsa(mc=MC.SA, ws=ws),  #isi.m uses actual MC.SA
+                isi.m2=isi.mcsa(mc=MC.SA2, ws=ws)) %>% #alternate where all are Dens=2
+  as.data.frame()
 
 ```
 
@@ -177,7 +180,7 @@ s.fires.mod <- s.fires3 %>%
 
 
 #surface fires, with false detrended C7; colour by FT
-#with isi.m squared model and linear (con.mod)
+#with isi.m squared model and linear (con.mod) - ***exploratory
 ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
        aes(x=isi.m, y=ROS)) +  
   geom_point(aes(colour=FT, size=SFC)) +    
@@ -188,7 +191,7 @@ ggplot(s.fires.mod %>% filter(!is.na(SFC)),
               formula=y~x-1, se=FALSE, colour='gray')
 #Add dewdrop fires again untransformed
 
-#Shown using ISI:
+#Shown using ISI ***exploratory
 ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
        aes(x=ISI, y=ROS)) +  
   geom_point(aes(colour=FT, size=SFC)) +    
@@ -215,21 +218,30 @@ sros.isim2.mod <- lm(ROS ~ I(isi.m^2)-1, data=s.fires.mod)
 #r^2=0.766 with s.fires.mod
 
 #lm using isi.m AND SFC - best simple model overall
-sros.isim2SFC.mod <- lm(ROS ~ I(isi.m^2)+SFC-1, data=s.fires.mod)
+sros.isim2SFC.mod <- lm(ROS ~ I(isi.m^2) + SFC-1, data=s.fires.mod)
 #r^2=0.749 with s.fires2
 #r^2=0.807 with s.fires.mod
 
 #similar model with ISI (sros.ISI2SFC.mod) is also good, but not as good
-sros.ISI2SFC.mod <- lm(ROS ~ I(ISI^2)+SFC-1, data=s.fires.mod)
+sros.ISI2SFC.mod <- lm(ROS ~ I(ISI^2) + SFC - 1, data=s.fires.mod)
 #r^2=0.7407
 
-
+#prediction functions
 sros.lin <- function(ws) {
   predict(sros.lin.mod, newdata=list(ws=ws))
 }
 
+#nls model and prediction function: ax^b format
+sf.axb.isi <- nls(data=s.fires.mod, formula= 
+               ROS ~ a * ISI^b, start=list(a=1, b=2))
+
+sf.axbisi.fun <- function(isi) {
+  predict(sf.axb.isi, newdata=list(ISI=isi))
+}
+
 
 #fake data for lines - isim2SFC / IsaSFC model; fros1 is at SFC=1, fros2 is at SFC=2
+#also ISI2SFC model and 
 f.sfires0 <- data.frame(fisim=seq(0:30), fsfc1=1, fsfc2=2)
 f.sfires <-mutate(rowwise(f.sfires0),
                        fros1=predict(sros.isim2SFC.mod, 
@@ -250,35 +262,70 @@ sros.vw <- function(isi) {
 }
 
 
-
 #fit Chapman-Richards function to surface fire data
 #This will be prediction model going forward
-s.nl <- nls(data=s.fires.mod, formula= 
+sf.cr.isim <- nls(data=s.fires.mod, formula= 
                ROS ~ 25 * (1-exp(-b*isi.m))^c, start=list(b=0.08, c=3))
 
-#just need to make a function
-s.nls <- function(isi.m) {
-  b=0.035177
-  c=1.987496
+#just need to make a function from the coefficients
+sf.crisim.fun <- function(isi.m) {
+  b=summary(sf.cr.isim)$coefficients[1]
+  c=summary(sf.cr.isim)$coefficients[2]
   ros=25 * (1-exp(-b*isi.m))^c
   return(ros)
 }
 
+#Using ISI
+sf.cr.isi <-nls(data=s.fires.mod, formula= 
+               ROS ~ 25 * (1-exp(-b*ISI))^c, start=list(b=0.1, c=3))
+
+#CR nls function using ISI
+sf.crisi.fun <- function(isi) {
+  b=summary(sf.cr.isi)$coefficients[1]
+  c=summary(sf.cr.isi)$coefficients[2]
+  ros=25 * (1-exp(-b*isi))^c
+  return(ros)
+}
+
+#Add function for ISI2SFC model
+sf.isi2sfc.fun <- function(isi, sfc) {
+  b1=summary(sros.ISI2SFC.mod)$coefficients[1]
+  b2=summary(sros.ISI2SFC.mod)$coefficients[2]
+  return(b1*(isi^2) + b2*sfc)
+}
+
 #plotted data and best model; gray line is sros.isim2SFC.mod model at SFC=1
-ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
+sf.isim.graph <- ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
        aes(x=isi.m, y=ROS)) +  
   geom_point(aes(colour=FT, size=SFC)) +    
   #geom_point(data=s.fires.mod %>% filter(FT=='PDF'), shape=21, size=4) +
   geom_line(data=f.sfires, aes(x=fisim, y=fros1), colour='gray') + #IsaSFC model
-  stat_function(fun=s.nls) +
-  stat_function(fun=c6s, color='green') + 
-  stat_function(fun=sros.vw, color='turquoise') +
-  geom_text(x=7, y=sros.vw(7)+3, label='VW93') +
-  geom_text(x=21, y=c6s(21)-1, label='C6s') +
-  geom_text(x=28, y=s.nls(28)-1, label='SF_CR') +
+  stat_function(fun=sf.crisim.fun) +
+#  stat_function(fun=c6s, color='green') +  #can't use VW models with isi.mcsa
+#  stat_function(fun=sros.vw, color='turquoise') +
+#  geom_text(x=7, y=sros.vw(7)+3, label='VW93') +
+#  geom_text(x=21, y=c6s(21)-1, label='C6s') +
+  geom_text(x=28, y=sf.crisim.fun(28)-1, label='CR_ISI.sa') +
   geom_text(x=28, y=predict(sros.isim2SFC.mod, newdata=list(isi.m=28, SFC=1))+3, 
             label='IsaSFC')
 
+sf.isim.graph
+
+#Graph with vw functions, ISI
+sf.isi.vw.graph <- ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
+       aes(x=ISI, y=ROS)) + 
+  geom_point(aes(colour=FT, size=SFC)) +    
+  #geom_point(data=s.fires.mod %>% filter(FT=='PDF'), shape=21, size=4) +
+  #geom_line(data=f.sfires, aes(x=fisim, y=fros1), colour='gray') + #IsaSFC model
+#  stat_function(fun=sf.axbisi.fun, color='grey') +
+  stat_function(fun=sf.crisi.fun, color='black') +
+#  stat_function(fun=c6s, color='green') +  #can't use VW models with isi.mcsa
+  stat_function(fun=sros.vw, color='turquoise') +
+  geom_text(x=7, y=sros.vw(7)+3, label='VW93') +
+ # geom_text(x=21, y=c6s(21)-1, label='C6s') +
+  geom_text(x=20, y=sf.crisi.fun(20)-1, label='CR_ISI')
+
+sf.isi.vw.graph
 ```
 
 ### [VW.lf mods]
@@ -322,7 +369,7 @@ zl.test = 4.5-3.2+(3.2 * 0.5 * 0.5)  #FSG_L
 
 ```
 
-### [Calculate FC_L]
+### [Calculate FC_L for Sharpsand]
 
 ```{r get stand data calculate FC_L}
 sh.full <- read.csv('c:/Dan/_Remote_projects/ccp_git/ccp-cfi/sharp_full.csv') %>%
@@ -359,14 +406,14 @@ sh.ctrl <- filter(sh.full, TRT=='ctrl') %>%
          sfc.add=cfc.d * (FSG/z.l)^1.5,  #SFC.2=(z.2/z.1)^1.5 * SFC.1
          sfc.add.stem=sfc.add/s.ha.d) 
 
-sh.ctrl2 <- sh.ctrl %>% select(Plot, ISI, FSG, SFC, sfc.add, CFI=CFI1) %>% 
+sh.ctrl2 <- sh.ctrl %>% select(Plot, ISI, isi.m, FSG, SFC, sfc.add, CFI=CFI1) %>% 
   mutate(sfc.both=SFC+sfc.add)
 
 ```
 
 ### [More SF exploration]
 
-```{r}
+```{r sf.vw, include=FALSE}
 #Get surface fires in mod or dense class(exclude GL)
 
 fd.sf <- filter(fd4, CFI1==0 & num != 68 &
@@ -398,8 +445,8 @@ fd.sf.sharp <- filter(fd.sf, Site %in% c(10:12))  #Sharpsand only
 
 #graph of surface fires, with VW ROS model and fitted ROS model, with ribbon
 #shows fires by site
-ggplot(data=fd.sf, aes(x=ISI, y=ROS))+ 
-  scale_shape_manual(values=c(2, 5, 6, 0, 1)) + #triangle, diamond, down triangle, sq, circle
+ggplot(data=s.fires.mod, aes(x=ISI, y=ROS))+ 
+  scale_shape_manual(values=c(2, 5, 6, 0, 1, 3, 7, 8, 9, 10)) + #triangle, diamond, down triangle, sq, circle
   geom_point(aes(colour=ExpProject, shape=str_extract(ExpProject, '\\w+'))) +
   geom_point(data=fd.sf.sharp, shape=1, size=4) +
   #geom_point(aes(size=FSG, colour=str_extract(ExpProject, '\\w+'))) + #no not useful in the end
@@ -407,6 +454,7 @@ ggplot(data=fd.sf, aes(x=ISI, y=ROS))+
   geom_ribbon(data=ribbon.df, aes(ymin=ROS.d35, ymax=ROS.u35),
               alpha=0.1) +
   stat_function(fun=sros.vw, colour='grey') + #vw 1993 model
+  stat_function(fun=c6s, colour='dark grey') + #vw c6s model
   stat_function(fun=sf.fun, colour='black') +
   theme_classic() +
   labs(shape='Site') +
@@ -450,10 +498,12 @@ sh.th <- filter(sh.full, TRT=='th') %>%
          sfc.add=cfc.d * (FSG/z.l)^1.5,  #SFC.2=(z.2/z.1)^1.5 * SFC.1
          sfc.add.stem=sfc.add/s.ha.d) 
 
- sh.th2 <- sh.th %>% select(Plot, ISI, FSG=FSG1, SFC, sfc.add, CFI=CFI1) %>% 
+sh.th2 <- sh.th %>% select(Plot, ISI, isi.m, FSG=FSG1, SFC, sfc.add, CFI=CFI1) %>% 
   mutate(sfc.both=SFC+sfc.add)
 
-sh.th2row <- mutate(sh.th2, 
+#ok to here
+
+sh.th2row <- mutate(sh.th2,
                       Ivw = vw.sfc(fmc=111.5, z=FSG, ros=sros.vw(ISI)),
                       Isq = vw.sfc(fmc=111.5, z=FSG, ros=sf.fun(ISI)))
 
@@ -483,7 +533,7 @@ $$
 ROS_S=0.02214 \cdot ISI^2
 $$
 
-[6], with adjusted $R^2$ of 0.706 and mean absolute error (MAE) of
+[6x], with adjusted $R^2$ of 0.706 and mean absolute error (MAE) of
 `r  fd.sf.mae[2]`.
 
 This is a much slower surface ROS model than that originally provided,
@@ -496,7 +546,7 @@ during flaming combustion in a typical boreal conifer stand are not
 comprised of the entire surface fuel layer, but rather only the
 well-aerated litter and fine woody debris. These two "errors" were
 self-correcting in Van Wagner's original description, but can now be
-amended. Instead, if we use the fitted model from Equation 6 to predict
+amended. Instead, if we use the fitted model from Equation 6x to predict
 surface ROS at a given ISI value, we are left with much higher required
 $SFC_0$ values than observed.
 
@@ -951,7 +1001,7 @@ sh.mod2 <- glm(CFI1 ~ isi.m + ExpF, data=fires.stat, family='binomial') #ISI usi
 
 #which model to use? sh.mod with ISI or sh.mod2 with mc.sa or other
 use.mod <- sh.mod
-#use.mod <- sh.mod2
+use.mod2 <- sh.mod2
 
 #generate fake data for log. regression graphs
 fdata.IM <- data.frame(fISI=seq(3, 20, by=0.1), fExp='Imm') %>%
@@ -976,14 +1026,19 @@ fdata.TH <- data.frame(fISI=seq(3, 20, by=0.1), fExp='Thin') %>%
                          #ype='response'))
 
 mod.co<-use.mod$coefficients
+mod2.co<-use.mod2$coefficients
 
 #solve for p=0.5 in logistical function; 
-#p=exp(b0+b1*ISI+b2*ExpSemi-M+b3*ExpThin+c)
-#so 0.5=1/(1+exp(b0+b1*ISI+b2*ExpSemi-M+b3*ExpThin+c)
+#p=exp(b0+b1*ISI+b2*ExpSemi-M+b3*ExpThin)
+#so 0.5=1/(1+exp(b0+b1*ISI+b2*ExpSemi-M+b3*ExpThin)
 #2=1+exp(b0...)
 #1=exp()
-#0=b0+b1*ISI+b2*ExpSemi-M+b3*ExpThin+c
+#0=b0+b1*ISI+b2*ExpSemi-M+b3*ExpThin
 #ISI=(b0+b2*ExpSemi-M+b3*ExpThin)/b1
+
+#for isi.m
+#0=b0+b1*isi.m+b2*ExpThin+b3*ExpSemi-M+c
+
 
 summary(use.mod)  #
 summary(multcomp::glht(use.mod, 
@@ -1000,19 +1055,26 @@ as treatments).
 
 Based on the logistic regression model, ISI and treatment both appeared
 to be significant predictors of crown fire success at the ⍺=0.05 level,
-with the Immature treatment is the base case. Note that a post-hoc Tukey
+with the Immature treatment as the base case. Note that a post-hoc Tukey
 multiple comparison test revealed that apparent difference between IM
 and TH treatments was marginal at best (p=0.102), which is not
 unexpected with such small treatment group sizes; other pairwise
 contrasts were non-significant (p\>0.2 for all other pairs).
-Nonetheless, we used this model to identify the most likely ISI crowning
-thresholds between treatments (Figure XX). This produced the three
-logistic curves shown in Figure X. By solving for p=0.5 (50%
-probability), we calculated the three crown fire transition thresholds
-as follows:
+Nonetheless, at this point we are not testing the hypothesis of
+treatment effects, but rather identifying the most likely crowning
+threshold between the treatment groups. Thus, we used this model to
+identify the most likely ISI crowning thresholds between treatments
+(Figure XX). This produced the three logistic curves shown in Figure X.
+By solving for p=0.5 (50% probability), we calculated the crown fire
+transition thresholds based on ISI or stand-adjusted ISI (ISI.sa),
+simply a renewed calculation of the ISI based on the FWI System
+equations, using the stand-adjusted moisture content estimate [from
+@wotton2007] in place of the FFMC-based moisture content estimate ['m'
+in @vanwagner1987].
 
 ```{r Log-CFI graph, define functions}
 #get cf thresholds (p=0.5); see prev. code chunk for derivation
+#With ISI model:
 isi.thresh.im <-  
   -(mod.co[[1]])/mod.co[[2]]  #
   
@@ -1021,8 +1083,18 @@ isi.thresh.semiM <-
 
 isi.thresh.th <- 
   -(mod.co[[1]] + mod.co[[3]])/mod.co[[2]]
-  
 
+#with isi.m model:
+isim.thresh.im <-  
+  -(mod2.co[[1]])/mod2.co[[2]]  #
+  
+isim.thresh.semiM <- 
+  -(mod2.co[[1]] + mod2.co[[4]])/mod2.co[[2]]
+
+isim.thresh.th <- 
+  -(mod2.co[[1]] + mod2.co[[3]])/mod2.co[[2]]
+
+  
 #thresholds with ISI (sh.mod):
 #imm: 6.61
 #th: 10.31
@@ -1034,7 +1106,7 @@ isi.thresh.th <-
 #semi-M: 8.95
 
 #'working mean':
-#'imm': 6.3
+#'imm': 5.7
 #'th': 9.8
 
 
@@ -1072,10 +1144,49 @@ sh.isi.log
 
 ```
 
-Crowning thresholds, as shown in the figure, were #inline code thresh.
+Crowning thresholds, as shown in the figure, were `r isi.thresh.im` and
+`r isi.thresh.th` for immature controls and thinned stands,
+respectively. In terms of ISI.sa, the $MC_{SA}$-based spread index, the
+respective thresholds were `r isim.thresh.im` and `r isim.thresh.th` for
+unthinned controls and thinned stands. Given identical ignition patterns
+and stand origin, the difference between these values, therefore,
+represents the increased crowning threshold achieved by reducing ladder
+fuels, counteracted somewhat by reduced stand density (from 'dense' to
+'moderate', based on Wotton and Beverly's [-@wotton2007] model).
 
-We then looked at what surface ROS values would tend to occur (in the
-absence of crowning) under conifer stands.
+We then needed a model to predict surface ROS values near the crowning
+threshold in the Sharpsand stands. This resulted in the empirical
+analysis of Canadian surface fire ROS data described in Appendix 1. The
+best surface fire models were obtained using the combination of ISI (or
+ISI.sa) and SFC. Notably, these models produced lower ROS predictions
+than suggested by Van Wagner's [-@vanwagner1993] surface fire model, at
+least for the range in question, representing ISI (or ISI.sa) values of
+\~5-10 or so.
+
+```{r}
+sf.isi.vw.graph
+```
+
+#### Byram's intensity
+
+Using Byram's equation along with our empirical surface ROS models and
+scaled ladder fuel equation [7] we can calculate the most likely $M$
+value required to generate equivalent values of $I_0$ for crowning.
+
+To do this we use treatments means for SFC and SFC_L along with
+
+```{r}
+
+#equivalent Byram's intensity near crowning threshold:
+#only really works with mean SFC from both sites
+sf.crisi.fun(6.61) * 300 * (1.34 + mean(sh.ctrl2$sfc.add) * 2.2)
+sf.crisi.fun(10.31) * 300 * 1.34
+
+#another tactic would be to make the case for NO M! (M=1)
+#Maybe ok, some of difference was due to higher SFC in Ctrl/Imm stands
+
+
+```
 
 ## Discussion
 
