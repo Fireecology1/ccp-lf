@@ -65,7 +65,7 @@ sharp.sm <- filter(fd4, str_detect(ExpProject, "Sharpsand SM")) %>% pull(num)
 sh.fires0 <- filter(fd4, num %in% c(sharp, sharp.th, sharp.sm)) %>% 
   select(fire, Date, num, ws, MC.SA, MC.SA_dens, MC.SA_season, FMC, 
          FFMC, DMC, ISI, FSG1, SFC, ROS, 
-         DC, FWI, CFI1, CFI2, Site) %>%
+         DC, BUI, FWI, CFI1, CFI2, Site) %>%
   mutate(Exp=case_when(
            num %in% sharp ~'Imm',
            num %in% sharp.th ~'Thin',
@@ -1157,34 +1157,85 @@ fuels, counteracted somewhat by reduced stand density (from 'dense' to
 We then needed a model to predict surface ROS values near the crowning
 threshold in the Sharpsand stands. This resulted in the empirical
 analysis of Canadian surface fire ROS data described in Appendix 1. The
-best surface fire models were obtained using the combination of ISI (or
-ISI.sa) and SFC. Notably, these models produced lower ROS predictions
-than suggested by Van Wagner's [-@vanwagner1993] surface fire model, at
-least for the range in question, representing ISI (or ISI.sa) values of
-\~5-10 or so.
+best surface fire models were obtained using the combination of ISI or
+ISI.sa and SFC, with adjusted R^2^ values of 0.747 and 0.807,
+respectively. Notably, these models produce lower ROS predictions than
+Van Wagner's surface fire model (VW93), 'to define the spread rate of
+all possible surface fires' in the Sharpsand stands [@vanwagner1993], at
+least for the range in question. While sROS predictions appear more
+scattered above ISI 12 or so, conditions favoring crown fire in many
+stands with lower LCBH, they are more clustered under lower danger
+conditions. Based on the estimated crowning thresholds, representing ISI
+(or ISI.sa) values of \~5-10, surface fire spread rates of 0.7 – 2.5 m
+min^-1^ are expected, notably less than the 2 – 10 m min^-1^ values
+predicted by the VW93 model.
 
 ```{r}
 sf.isi.vw.graph
 ```
 
-#### Byram's intensity
+#### Byram's intensity and estimating *M*
 
-Using Byram's equation along with our empirical surface ROS models and
-scaled ladder fuel equation [7] we can calculate the most likely $M$
-value required to generate equivalent values of $I_0$ for crowning.
+We can finally use our scaled ladder fuel equation [7] along with
+Byram's equation [@byram1959] and our empirical surface ROS models, and
+calculate the most likely $M$ value. This calculation assumes that
+equivalent $I_0$ are required for crowning in the control and thinned
+stands, both with LCBH of 4.4 m.
 
-To do this we use treatments means for SFC and SFC_L along with
+Therefore,
+
+$$
+\begin{align*}
+I_{0 \cdot Im} &= I_{0 \cdot Th} \\
+h \cdot w_{Im} \cdot ROS_{Im} &= h \cdot w_{Th} \cdot ROS_{Th} \\
+SFC_{Im} \cdot ROS_{0 \cdot Im} &= SFC_{Th} \cdot ROS_{0 \cdot Th} \\
+(SFC+FC_{SE \cdot Im} \cdot M) \cdot ROS_{0 \cdot Im} &= SFC_{th} \cdot ROS_{0 \cdot Th} \\
+\end{align*}
+$$
+
+Based on [7], $FC_{SE}$ is calculated using estimated ladder fuel
+consumption and structure. In this case, we calculate ladder fuel height
+($z_L$) using an estimated crown ratio of 0.5 and cohort heights from
+Walker and Stocks [-@walker1975] original stand data. Mean dead sapling
+height and \< 1 cm dead roundwood ($FC_L$ ) in control stands were 3.49
+m and 0.159 kg m^-2^, resulting in mean $z_L=2.62$ m. Scaled
+surface-equivalent consumption, calculated using [6], ranged from 0.291
+to 1.227 kg m^-2^, with a mean of 0.658 kg m^-2^ .
+
+The final solution for estimating M was calculated as follows:
+
+$$\begin{align*}
+SFC_{Th} \cdot ROS_{0 \cdot Th}
+incomplete
+\end{align*}
+$$
+
+Using overall mean SFC values (1.34 kg m^-2^), this generates estimates
+of $M = 2.2$ using the ISI-based sROS model and crowning thresholds, and
+$M=4.6$ using the ISI.sa-based model and thresholds.
+
+Note that the actual measured SFC values were somewhat different between
+treatments, with thinned stands (marginally significant: Welch's
+t=0.0773). If we use actual treatment mean SFC values of
 
 ```{r}
 
 #equivalent Byram's intensity near crowning threshold:
 #only really works with mean SFC from both sites
-sf.crisi.fun(6.61) * 300 * (1.34 + mean(sh.ctrl2$sfc.add) * 2.2)
-sf.crisi.fun(10.31) * 300 * 1.34
+#mean SFC
+mean.sfc <- sh.fires %>% filter(Exp %in% c('Imm', 'Thin')) %>% summarize(mean(SFC))
+
+sf.crisi.fun(isi.thresh.im) * 300 * (mean.sfc + mean(sh.ctrl2$sfc.add) * 2.2)  #M=2.2?
+sf.crisi.fun(isi.thresh.th) * 300 * mean.sfc # = I_0
+
+#Solved M=2.2 when using mean SFC value
 
 #another tactic would be to make the case for NO M! (M=1)
 #Maybe ok, some of difference was due to higher SFC in Ctrl/Imm stands
 
+#Using isi.m models:
+sf.crisim.fun(4.7) * 300 * (1.34 + mean(sh.ctrl2$sfc.add) * 4.6)
+sf.crisim.fun(9.19) * 300 * 1.34 
 
 ```
 
