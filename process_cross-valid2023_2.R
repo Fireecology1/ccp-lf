@@ -20,6 +20,7 @@ icfme <- 77:87 #order is A, 1, 3, 4, 5, 6, 7, 8a, 8b, 9, 2; fixed in icfme proce
 #kWayCrossValidation - let's see how this compares
 
 require(vtreat)
+require(stringr)
 
 #Number of loops for cross-validation (~20 for testing; 1000 for production)
 Times=100
@@ -1190,14 +1191,32 @@ XV.sum.simple <- XV.summary %>%
 XV.summary <- mutate(XV.summary, 
                      Accuracy=round(Accuracy, 3), MCC=round(MCC, 3), AIC=round(AIC, 1))
 
+#new version, only good model forms, base and up for 2024
+#9, 10, 12, 13, 15, 16, 17, 18
+model.order2 <- letters[c(9, 10, 12, 13, 15, 16, 17, 18)]
+reorder2 <- c(9, 10, 12, 13, 15, 16, 17, 18)
+runnum2 <- runnum[reorder2]
+XV.sum2 <- data.frame(model.order2, reorder2, 
+                      Model=as.character(modelform[reorder2]) %>% str_replace('CFI ~ ', ''), 
+                      runnum2, Accuracy=round(accuracy.vals[reorder2], 4), 
+                      MCC=round(mcc.vals[reorder2], 4), 
+                      AIC=round(aic.vals[reorder2], 2), 
+                         Dataset[reorder2]) %>%
+  mutate(MCC.rank=rank(length(MCC) + 1 - rank(MCC)),  #isn't there a descending rank function?
+         AIC.rank=rank(AIC)) %>% 
+  arrange(reorder2) %>% select(-model.order2, -reorder2) 
+
 #changed to '_2' Apr 10, 2023 after adding 3 PNFI-RP fires
 #Changed to '_3' on May 28, 2023 after changing sharp-SM SFC to estimate CFC portion
 #Changed to '_4' on July 13, 2023 after fixing small errors in Sharp-SM SFC
 #Added '_5' on Dec 6 2023 after solving for M using 'linearCombo' method
+#Added '_2024' on Jan 25 2024 after cleaning up main M analyis in LF RMD file
 #fixed LF calculations (fd_current _process2) and reran. fire_data_may2023b.csv has corrections
 
-#write.csv(XV.summary, './tables/xv_summary5.csv')
-#write.csv(XV.sum.simple, './tables/xv_sum_simple4.csv')
+#write.csv(XV.summary, './tables/xv_summary5.csv') - not to be trusted; may have screwed up order
+#write.csv(XV.sum.simple, './tables/xv_sum_simple4.csv') - same
+#write.csv(XV.sum2, './tables/xv_sum2_2024.csv')
+
 
 seeds <- list(seed.a, seed.b, seed.c, seed.d, seed.e, seed.f, seed.g, seed.h, seed.i, seed.j, seed.k, seed.kb, seed.l, 
               seed.m, seed.n, seed.o)
