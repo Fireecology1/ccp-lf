@@ -23,7 +23,7 @@ require(vtreat)
 require(stringr)
 
 #Number of loops for cross-validation (~20 for testing; 1000 for production)
-Times=100
+Times=1000
 nSplits=4
 
 #chg names so that models can work
@@ -103,7 +103,7 @@ f14 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC2)) + ws:MC.SA)
 #Equivalent doesn't work as well
 #(fd4$FSG[sharp.sm] %>% mean() / (fd5$FSG[sharp.sm] %>% mean()))^1.5
 #1.3689 
-M = 3 #or so? See below
+M = 4 #or so? See below
 
 fd7 <- fd4 %>% 
   mutate(SFC3 = SFC + SFC.LF*M)

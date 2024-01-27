@@ -352,10 +352,10 @@ vwi <- function(fmc=100, z) {
 
 #ladder fuel scaling
 #Corrected!
-lf.sfc <- function(zg, zl, fcl) {
+lf.sfc <- function(zg, cl, fcl) {
   #zg is overstory LCBH
-  #zl is ladder fuel height, or understory fuel centroid
-  fcg=(zg/(zg-zl))^1.5 * fcl
+  #Cl is ladder fuel height, or understory fuel centroid
+  fcg=(zg/(zg-cl))^1.5 * fcl
   return(fcg)
 }
 
@@ -399,15 +399,37 @@ dead.cfc.mean <- mean(lf.cfl)
 s.ha.ctrl <- filter(sh.full, TRT=='ctrl') %>% pull(s.ha.d)
 dead.cfl.snag <- mean(lf.cfl*10000/s.ha.ctrl)  #mean snag weight cfl (<1 cm) per stem, from ctrl stands; in kg/stem
 
+#process LF in control/IM stands
 sh.ctrl <- filter(sh.full, TRT=='ctrl') %>% 
   mutate(cfc.d=lf.cfl,
          cfc.d.stem=cfc.d * 10000/s.ha.d,   #kg/m2*10000 m2/ha/s/ha = kg/stem
-         z.l=FSG - HT.D + (HT.D * 0.5 * 0.5),  #assume CR of 0.5;
-         sfc.add=cfc.d * (FSG/z.l)^1.5,  #SFC.2=(z.2/z.1)^1.5 * SFC.1
-         sfc.add.stem=sfc.add/s.ha.d) 
+         c.l= HT.D * 0.75,  #assume CR of 0.5;
+         sfc.add=lf.sfc(zg=FSG, cl=c.l, fcl=cfc.d), #SFC.2=(z.2/z.1)^1.5 * SFC.1
+         sfc.add.stem=sfc.add/s.ha.d,
+         sfc.add2=lf.sfc(zg=FSG, cl=HT.D/2, fcl=cfc.d))
 
-sh.ctrl2 <- sh.ctrl %>% select(Plot, ISI, isi.m, FSG, SFC, sfc.add, CFI=CFI1) %>% 
+
+sh.ctrl2 <- sh.ctrl %>% select(Plot, ISI, isi.m, FSG, SFC, sfc.add, 
+                               sfc.add2, CFI=CFI1) %>% 
   mutate(sfc.both=SFC+sfc.add)
+
+# cfc per dead stem, kg
+cfc.dstem <- summarize(sh.ctrl, mean(cfc.d.stem)) %>% pull()
+
+
+#Process LF in TH stands
+sh.th <- filter(sh.full, TRT=='th') %>% 
+  mutate(cfc.d.stem=cfc.dstem, #use cfc in ctrl plots to estimate cfc in th plots
+         cfc.d=cfc.d.stem * s.ha.d / 10000, #kg * s/ha / 10000m^2/ha to give kg/m^2
+         c.l= HT.D * 0.75,  #assume CR of 0.5;
+         sfc.add=lf.sfc(zg=FSG, cl=c.l, fcl=cfc.d),
+         sfc.add.stem=sfc.add/s.ha.d,
+         sfc.add2=lf.sfc(zg=FSG, cl=HT.D/2, fcl=cfc.d)) 
+
+sh.th2 <- sh.th %>% select(Plot, ISI, isi.m, FSG=FSG1, SFC, sfc.add, 
+                           sfc.add2, CFI=CFI1) %>% 
+  mutate(sfc.both=SFC+sfc.add)
+
 
 ```
 
@@ -489,17 +511,6 @@ sh.ctrl2row <- mutate(sh.ctrl2,
                       Ivw = vw.sfc(fmc=111.5, z=FSG, ros=sros.vw(ISI)),
                       Isq = vw.sfc(fmc=111.5, z=FSG, ros=sf.fun(ISI)))
 
-cfc.dstem <- summarize(sh.ctrl, mean(cfc.d.stem)) %>% pull()#cfc per dead stem, kg
-
-sh.th <- filter(sh.full, TRT=='th') %>% 
-  mutate(cfc.d.stem=cfc.dstem, #use cfc in ctrl plots to estimate cfc in th plots
-         cfc.d=cfc.d.stem * s.ha.d / 10000, #kg * s/ha / 10000m^2/ha to give kg/m^2
-         z.l=FSG - HT.D + (HT.D * 0.5 * 0.5),  #assume CR of 0.5; crown cent. FSG
-         sfc.add=cfc.d * (FSG/z.l)^1.5,  #SFC.2=(z.2/z.1)^1.5 * SFC.1
-         sfc.add.stem=sfc.add/s.ha.d) 
-
-sh.th2 <- sh.th %>% select(Plot, ISI, isi.m, FSG=FSG1, SFC, sfc.add, CFI=CFI1) %>% 
-  mutate(sfc.both=SFC+sfc.add)
 
 #ok to here
 
@@ -740,16 +751,15 @@ crowning, as a consequence of the much higher surface fire intensity
 required.
 
 In the case of the consumption of an elevated ladder fuel quantity
-$FC_L$ positioned at height above ground $z_L$ (such as the centroid of
-a standing dead sapling, or sapling cohort, beneath a live conifer
-canopy), finding the surface-equivalent $FC$ value ($FC_{SE}$) is then a
-matter of inflating its influence due to its elevated position. In this
-case, z remains the normal LCBH for the live canopy and $z-z_L$ can also
-be considered the fuel strata gap between ladder fuel elements and the
-LCBH:
+$FC_L$ positioned at height above ground $C_L$ (such as the centroid of
+a sapling cohort beneath a live conifer canopy), finding the
+surface-equivalent $FC$ value ($FC_{SE}$) is then a matter of inflating
+its influence due to its elevated position. In this case, z remains the
+normal LCBH for the live canopy and $z-C_L$ can also be considered the
+fuel strata gap between ladder fuel elements and the LCBH:
 
 $$
-FC_{SE}=(\frac {z} {z-z_L})^{1.5} \cdot FC_L ~~, ~~~~~~ z_L > z
+FC_{SE}=(\frac {z} {z-C_L})^{1.5} \cdot FC_L ~~, ~~~~~~ z > C_L
 $$
 
 [6]. Using Equation 6, it becomes possible to estimate the contribution
@@ -774,10 +784,10 @@ investigation, empirically.
 
 Second, while equation 6 specifies that the ladder fuel height cannot
 exceed the LCBH, it is apparent that as the difference between them
-($z-z_L$) diminishes, $FC_G$ can grow to extreme levels, eventually
-producing a division by zero problem at $z=z_L$. Thus, 0.1
+($z-C_L$) diminishes, $FC_G$ can grow to extreme levels, eventually
+producing a division by zero problem at $z=C_L$. Thus, 0.1
 $kg \cdot m^{-2}$ of fuel consumption 1 m below a 5 m tall canopy base
-($z-z_L=1$) scales to equate to ground-level SFC of 1.12 kg m^-2^ , but
+($z-C_L=1$) scales to equate to ground-level SFC of 1.12 kg m^-2^ , but
 the same fuel consumption 0.2 m below the same canopy scales to
 $FC_G$=12.5 kg m^-2^. This logic holds in a theoretical sense – a fire
 is much more likely to ignite the lower live canopy if the burning fuel
@@ -797,12 +807,12 @@ with $FC_{SE}$ being the surface-equivalent ladder fuel consumption
 value from eq. 6 and $M$ being the appropriate multiplier for converting
 $FC_L$ to $FC_{SE}$.
 
-Recall that SFC values in Canadian experimental fires ranged from 0.2 to
-3.8 kg m\^{-2} [@perrakis2023]. The value of this multiplier, $M$, could
-range from 1 (no effect) to 10 or more in the event that ladder fuel
-biomass and arrangement appeared to have more than an order of magnitude
-greater effect than surface biomass on upward heat flux and crown fire
-initiation.
+Measured and estimated SFC values in Canadian experimental fires ranged
+from 0.2 to 3.8 kg m^-2^ [@perrakis2023]. The value of this multiplier,
+$M$, could range from 1 (no effect) to 10 or more in the event that
+ladder fuel biomass and arrangement appeared to have more than an order
+of magnitude greater effect than surface biomass on vertical heat flux
+and crown fire initiation.
 
 The remainder of the study tests and discusses empirical evidence for
 equations 5 –7, using ananlyses on previously documented Canadian
@@ -824,49 +834,43 @@ trees).
 ### Study area: Sharpsand Creek, Ontario
 
 The first two validation methods used data from the fire experiments at
-Sharpsand Creek, Ontario. Stand and fuel measurements were initiated in
-the early 1970's at this site north of Thessalon, Ontario, in advance of
-experimental burns conducted over a 15-year period. This resulted in 27
-separate and independent experimental fire observations in three
-distinct structure classes. The original unaltered stand (immature: IM)
-consisted of densely stocked jack pine natural regenerated on gravelly
-soil [@walker1975a] following the spring 1948 Mississagi fire
-[@stocks1973]. The dense stands in the earliest burns featured over 9000
-live stems/ha and over 10,000 dead stems/ha as the stand underwent rapid
-stem-exclusion. Results from the earlier fires (1975-1981) were
-published in Stocks [-@stocks1987a] and included in the empirical
-derivation of the C-4 fuel type model [@fcfdg1992]; these were also
-analyzed separately by Van Wagner [@vanwagner1993] and discussed in
-several other fire behaviour studies [@call1997; @cruz2003;
-@albini1986].
+Sharpsand Creek, Ontario. This site and its observations have been
+analyzed in several studies but remain useful for the present purposes.
+As previously described, 27 plots in three separate treatment types were
+burned between 1974 and 1991 at this site north of Thessalon, Ontario.
+The original unaltered stand (immature: IM) consisted of naturally
+regenerated jack pine following a 1948 wildfire, with dense stocking and
+abundant ladder fuels [@walker1975; @stocks1973]. Results from the
+initial experimental fires (1975-1981) were published by Stocks
+[-@stocks1987] and formed the empirical basis for much of the FBP System
+C-4 fuel type [@forestrycanadafiredangergroup1992]. These observations
+were also analyzed separately by Van Wagner [@vanwagner1993] and used in
+additional fire behaviour studies [@call1997; @albini1986; @cruz2003].
+During the course of these experiments, it was discovered that 6 of the
+plots had been hand-thinned (TH) in 1960, removing most of the live
+stems and resulting in much less dense stands compared with the
+'control' IM plots [@stocks1987; B. J. Stocks, personal communication,
+Jan. 2020].
 
-Results from the later fires (1988-1991) were not included in the FBP
-System analyses and were fully documented only recently [@mcrae2017a].
-The stand characteristics associated with the later experimental fires
-highlighted significant structural and successional changes underway as
-stands evolved: the dense immature forest was rapidly self-thinning,
-from 9,276 live stems/ha at the time of the original experiments
-(measured in 1973) to less than half the live density (4,375 stems/ha)
-as well as 53% more basal area in 1984. These were termed 'semi-mature'
-(SM), and estimated to also have average LCBH of 5.3 m, about 1 m higher
-than the IM stands. During the course of the earlier burn experiments,
-it was discovered that 6 of the plots had been hand-thinned (TH) in
-1960, removing most of the live stems and resulting in much less dense
-stands compared with the IM plots [@stocks1987a; B. J. Stocks, personal
-communication, Jan. 2020]. While these thinned stands were the same age
-and site characteristics as the denser IM (C-4 fuel type) stands, the
-burns in the thinned plots had been deemed more representative of mature
-pine stands and previously included in the FBP System C-3 fuel type
-dataset [@degroot2022].
+In the later fires (1988-1991), stand characteristics indicated
+significant structural changes underway during the intervening years.
+The dense IM plots were initially surveyed at \>9000 live stems ha^-1^
+and \> 10,000 dead stems ha^-1^ [measured in 1973; @stocks1987]; when
+re-surveyed over a decade later, self-thinning in so-called semi-mature
+(SM) stands had reduced live and dead stem density by 53 % and 63 %,
+respectively, while total basal area increased by 37 %; average LCBH had
+also increased to 5.3 m, about 1 m higher than IM stands [@mcrae2017].
 
-Burning years ranged from in 1974-1976, 1981, 1988, 1990-1991; thus, at
-post-fire ages 26-43. As discussed in a previous analysis
-[@Perrakis2023], earlier studies handled these three treatments in
-different ways, but mainly by estimating the ladder fuel influence as a
-modification of the LCBH in a subjective sense, using an expert judgment
-adjustment and defining the fuel strata gap (FSG) as the net distance
-between surface and fuel strata, including the effects of standing dead
-ladder fuels [@cruz2004, @cruz2006, @perrakis2023].
+As discussed in a previous study [@perrakis2023], earlier studies
+handled these three stand types in various ways. With the IM stands
+included in the C-4 fuel type, the TH plots had been deemed more
+representative of mature pine stands and previously included in the FBP
+System C-3 fuel type, despite similar age, LCBH and site characteristics
+as the IM stands [@degroot2022]. In later studies, the ladder fuel
+influence in IM stands was estimated as a modification of the LCBH based
+on the logic of reduced distance between surface fuel and canopy fuel
+and lower crowning thresholds; this modified LCBH measure was termed the
+Fuel Strata Gap [@cruz2004; @cruz2006; @perrakis2023].
 
 ### Crowning behaviour and ladder fuel consumption
 
@@ -879,13 +883,10 @@ fire type was identified as 'surface', 'some torching', 'torching', and
 'torching' fires experienced behaviour akin to passive crowning, while
 those described as 'some torching' appeared to be near the crowning
 threshold (i.e., \~5-15% crown fraction burned). Following discussions
-with experimental leaders (BJ Stocks, pers. comm.), the two fires
+with experimental leaders (BJ Stocks, pers. comm. 2020), the two fires
 described as 'some torching' were split, with fire #16 (ISI=8.1, ROS=3.5
-m/min) was considered a vigorous surface fire, while fire #18 (ISI=9.4,
-ROS=5.1 m/min) was considered a marginal passive crown fire. As noted in
-a previous study, as surface fires begin to involve more canopy fuels
-and transition to passive crown fire, ROS is observed to increase beyond
-the baseline for true surface fires (i.e., no crown fuel involvement).
+m/min) considered a vigorous surface fire, while fire #18 (ISI=9.4,
+ROS=5.1 m/min) was considered a marginal passive crown fire.
 
 The most challenging value for the analysis is the fuel consumption of
 ladder fuels, as this is seldom measured (though sometimes estimated
@@ -894,16 +895,26 @@ estimated dead roundwood fuel consumption for the original Sharpsand
 Creek exprerimental fires, and these values are used in the present
 analysis.
 
-For the calculations, ladder fuel influence was incorporated into
-certain models using equation 6 to scale the fine dead ladder fuels
-(fine snags and dead crown fuel \< 1 cm; Stocks 1987) into an equivalent
-SFC contribution value, $SFC_L$. The vertical position of fine standing
-ladder fuels was assumed to be the crown centroid of the mean dead snag
-height [LCBH+(height-LCBH)/2; @perrakis2023] in an experimental plot
-(Figure X#snag diagram). SFC_L was then added to the actual (measured)
-SFC for modelling. Additional tests were completed where the elevated
-fuel contribution was increased using a multiplier, discussed further
-below.
+For the present calculations, ladder fuel influence was quantified using
+equation 6 to scale the estimated ladder fuel consumption (dead canopy
+fuel \< 1 cm; Stocks 1987) into an equivalent SFC contribution value,
+$SFC_L$. The vertical position of fine standing ladder fuels was assumed
+to be the crown centroid of the mean dead snag crowns
+$C_L=CBH+\frac {height-CBH}{2}$[@perrakis2023] at the stand level, where
+CBH is the mean crown base height of the dead saplings.
+
+```{r}
+knitr::include_graphics(path='./files/FSG-snags-crown.png')
+```
+
+*Diagram (not to scale) showing approximate estimation of live crown
+base height (z), dead ladder fuel centroid (C~L~), and fuel strata gap
+(z~L~) for immature jack pine stands (unthinned controls) at Sharpsand
+Creek.*
+
+SFC_L was then added to the actual (measured) SFC for modelling.
+Additional tests were completed where the elevated fuel contribution was
+increased using a multiplier, discussed further below.
 
 #### Estimation 1 - expert opinion
 
@@ -1151,8 +1162,7 @@ sh.isi.log
 
 ```
 
-```{r cf thresholds}
-
+```         
 ```
 
 Crowning thresholds were `r round(isi.thresh.im, 2)` and
@@ -1209,14 +1219,14 @@ $$
 
 Based on [7], $FC_{SE}$ is calculated using estimated ladder fuel
 consumption and structure. In this case, we calculate ladder fuel height
-($z_L$) using an estimated crown ratio of 0.5 and cohort heights from
+($C_L$) using an estimated crown ratio of 0.5 and cohort heights from
 Walker and Stocks [-@walker1975] original stand data. Mean dead sapling
 height and \< 1 cm dead roundwood ($FC_L$ ) in control stands were 3.49
-m and 0.159 kg m^-2^, resulting in mean $z_L=2.62$ m. Scaled
+m and 0.159 kg m^-2^, resulting in mean $C_L=2.62$ m. Scaled
 surface-equivalent consumption values, calculated using [6], ranged from
 0.291 to 1.227 kg m^-2^, with a mean of 0.658 kg m^-2^ .
 
-The final solution for estimating M was calculated by solving for M:
+The final solution was calculated by solving for M:
 
 $$\begin{align*}
 (SFC+FC_{SE \cdot Im} \cdot M) \cdot ROS_{0 \cdot Im} &= SFC \cdot ROS_{0 \cdot Th} \\
@@ -1224,24 +1234,39 @@ M &= \frac {\frac {SFC \cdot ROS_{0 \cdot Th}} {ROS_{0 \cdot Im}} - SFC} {FC_{SE
 \end{align*}
 $$
 
-Using overall mean SFC values (1.34 kg m^-2^), this generates estimates
-of $M = 2.2$ using the ISI-based sROS model and crowning thresholds, and
-$M=4.6$ using the ISI.sa-based model and thresholds.[^1]
+This was expressed using overall mean SFC values from all IM and TH
+plots (1.34 kg m^-2^), as measured SFC values were not significantly
+different between treatments (p=0.077). Using the two spread rate
+models, this produced $M = 2.2$ using the ISI-based sROS model and
+crowning thresholds, and $M=4.6$ using the ISI~SA~-based model and
+thresholds.
 
-[^1]: Measured SFC values were not significantly different between
-    treatments (p=0.07), so the mean value between all plots was used.
+In addition to the sROS models, the sensitivity analysis compared using
+the dead ladder fuel midpoint (cohort height/2), the equivalent of a
+crown ratio of 1. This results in significantly lower FC~SE~ values, due
+to the greater z~L~ values.
 
-```{r}
+Final estimates of M ranged from 2.2 to 8.7, as shown in the table
+below:
+
+```{r include=FALSE}
+
+#t-test to compare SFC between treatments
+t.test(sh.ctrl2$SFC, sh.th2$SFC)
+#p=0.773
 
 #equivalent Byram's intensity near crowning threshold:
 #only really works with mean SFC from both sites
 #mean SFC
-mean.sfc <- sh.fires %>% filter(Exp %in% c('Imm', 'Thin')) %>% summarize(mean(SFC))
+mean.sfc <- sh.fires %>% 
+  filter(Exp %in% c('Imm', 'Thin')) %>% summarize(mean(SFC))
 
 sf.crisi.fun(isi.thresh.im) * 300 * (mean.sfc + mean(sh.ctrl2$sfc.add) * 2.2)  #M=2.2?
 sf.crisi.fun(isi.thresh.th) * 300 * mean.sfc # = I_0
 
 #actual calculations of M, at long last:
+#replace $sfc.add with $sfc.add2 to use the dead snag centroid (height/2), 
+#rather than height*0.75  
 M3isi <- ((mean.sfc * sf.crisi.fun(isi.thresh.th))/
          sf.crisi.fun(isi.thresh.im) - mean.sfc)/ 
   mean(sh.ctrl2$sfc.add)
@@ -1250,8 +1275,17 @@ M3isim <- ((mean.sfc * sf.crisim.fun(isim.thresh.th))/
          sf.crisim.fun(isim.thresh.im) - mean.sfc)/ 
   mean(sh.ctrl2$sfc.add)
 
+#with LF centroid at H/2 instead of 'crown' centroid:
+M3isi2 <- ((mean.sfc * sf.crisi.fun(isi.thresh.th))/
+         sf.crisi.fun(isi.thresh.im) - mean.sfc)/ 
+  mean(sh.ctrl2$sfc.add2)
 
-#Solved M=2.2 when using mean SFC value
+M3isim2 <- ((mean.sfc * sf.crisim.fun(isim.thresh.th))/
+         sf.crisim.fun(isim.thresh.im) - mean.sfc)/ 
+  mean(sh.ctrl2$sfc.add2)
+
+#compare M values using different methods
+meanM <- sum(M3isi, M3isim, M3isi2, M3isim2)/4
 
 #another tactic would be to make the case for NO M! (M=1)
 #Maybe ok, some of difference was due to higher SFC in Ctrl/Imm stands
@@ -1260,6 +1294,8 @@ sfc.im <- sh.ctrl2$SFC %>% mean()
 sfc.th <- sh.th2$SFC %>% mean()
 
 #Using isi and isim models, different SFC vals:
+#replace $sfc.add with $sfc.add2 to use the dead snag centroid (height/2), 
+#rather than height*0.75  
 M3isi.diff <- ((sfc.th * sf.crisi.fun(isi.thresh.th))/
          sf.crisi.fun(isi.thresh.im) - sfc.im)/ 
   mean(sh.ctrl2$sfc.add)
@@ -1269,19 +1305,27 @@ M3isim.diff <- ((sfc.th * sf.crisim.fun(isim.thresh.th))/
   mean(sh.ctrl2$sfc.add)
 
 #M = 1.3 with ISI mod, 3.3 with isim model
+
+#Table
+mdf <- data.frame()
+
 ```
+
+[finish table]
 
 #### Empirical crown fire analysis
 
 Finally, we reanalyzed the experimental crown fire dataset using Monte
 Carlo cross-validation, comparing models with $log(SFC)$,
 $log(SFC + FC_{SE})$, and $log(SFC + FC_{SE} \cdot M)$. The starting
-value for M was 3, a rough mean of the previous estimates.
+value for M was 4, a rough mean of the previous estimates.
 
-As the table shows, the cross-validation evidence does support the
-existence of M \> 1, but it is perhaps underwhelming. The best model
-results (highest MCC, lowest AIC) for both FFMC and MC.SA-based models
-are the versions using the M=3 multiplier for $FC_{SE}$.
+As show in the table, the cross-validation evidence supports the
+existence of M \> 1. Both the FFMC- and MC~SA~-based models (7, 8) using
+M had higher mean accuracy and lower AIC than comparable models
+incorporating ladder fuels without a multiplier effect (5, 6). The best
+models were superior than either the base (LCBH only; 1, 2) or
+subjectively-assigned FSG (3, 4) models.
 
 Table
 
