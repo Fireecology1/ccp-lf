@@ -1361,7 +1361,9 @@ influences near crown fire initiation thresholds.
 -For the theoretical relationship to hold for actual ladder fuel
 elements (flammable shrubs, saplings, bark flakes, hanging lichens,
 etc.), it is imperative that they be connected to surface fuels, and in
-actual forest settings
+actual forest settings this is uncertain. Factors such as flame
+residence time (refs#) are probably important for determining the degree
+of consumption of standing ladder fuels such as dead saplings.
 
 -The concept of a multiplier for comparing elevated fuels to surface
 fuels is a similar topic to Van Wagner's [-vanwagner1977] 'c' parameter
@@ -1383,5 +1385,15 @@ explained it as a difficulty in estimating
 
 Method could also be used to estimate influence of dead branch fuel
 below LCBH, bark flakes, arboreal lichens, or similar material.
+
+Surface fire ROS model is an important component of all calculations.
+Although the SROS models we present are imprecise and gloss over
+potentially importnat differences such as litter type, canopy closure,
+overstory species and porosity (as per Rothermel 1972; Campbell-Lochrie
+et al. 2021), they are important to show real-world surface fire
+conditions in Canadian conifer stands. These models can be used along
+with crown fire modelling systems. In addition to the empirical models
+shown here, SROS models can be used along with VW77, CanFire, CFIM, or
+other tools appropriate to the context and questions of interest.
 
 ## References:
