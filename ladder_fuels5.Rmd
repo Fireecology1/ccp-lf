@@ -133,7 +133,7 @@ s.miss0 <- data.frame(num=122:125, fire=c('PNFI #1 13 yr ONT',
                      MC.SA_season=c(1, 2, 1, 2), MC.SA_dens=2, 
       MC.SA_stand=4, FT='Con') #consider all 4 to be pine stands (conifer type)
 
-#with corrected ISI values for the first two C4 PNFI fires
+#with ISI.mcsa values for the first two C4 PNFI fires
 s.miss <- mutate(rowwise(s.miss0), 
                  MC.SA=wbmc5(FFMC, DMC, MC.SA_stand, MC.SA_dens, MC.SA_season),
                  isi.m=isi.mcsa(mc=MC.SA, ws=ws)) %>%
@@ -155,7 +155,7 @@ con.mod <- function(isim) {
 
 #Noted - fires with some torching seem to be anomalous
 #Exceptions: fires with torching, CFC >1
-except <- filter(s.fires, CFC >0.1)
+except <- filter(s.fires, CFC > 0.1)
 
 #show exceptions, other issues
  ggplot(s.fires, aes(x=ISI, y=ROS)) + 
@@ -294,7 +294,7 @@ sf.isi2sfc.fun <- function(isi, sfc) {
   return(b1*(isi^2) + b2*sfc)
 }
 
-#plotted data and best model; gray line is sros.isim2SFC.mod model at SFC=1
+#plotted data and best model; gray line is sros.isim2SFC.mod model at SFC=1.4
 sf.isim.graph <- ggplot(s.fires.mod %>% filter(!is.na(SFC)), 
        aes(x=isi.m, y=ROS)) +  
   geom_point(aes(colour=FT, size=SFC)) +    
@@ -305,9 +305,11 @@ sf.isim.graph <- ggplot(s.fires.mod %>% filter(!is.na(SFC)),
 #  stat_function(fun=sros.vw, color='turquoise') +
 #  geom_text(x=7, y=sros.vw(7)+3, label='VW93') +
 #  geom_text(x=21, y=c6s(21)-1, label='C6s') +
-  geom_text(x=28, y=sf.crisim.fun(28)-1, label='CR_ISI.sa') +
-  geom_text(x=28, y=predict(sros.isim2SFC.mod, newdata=list(isi.m=28, SFC=1))+3, 
-            label='IsaSFC')
+  geom_text(x=28, y=sf.crisim.fun(28)-2, label='CR_ISI.sa') +
+  geom_text(x=28, y=predict(sros.isim2SFC.mod, 
+            newdata=list(isi.m=28, SFC=1.4))+3, 
+            label='IsaSFC') +
+  theme_classic()
 
 sf.isim.graph
 
@@ -323,7 +325,8 @@ sf.isi.vw.graph <- ggplot(s.fires.mod %>% filter(!is.na(SFC)),
   stat_function(fun=sros.vw, color='turquoise') +
   geom_text(x=7, y=sros.vw(7)+3, label='VW93') +
  # geom_text(x=21, y=c6s(21)-1, label='C6s') +
-  geom_text(x=20, y=sf.crisi.fun(20)-1, label='CR_ISI')
+  geom_text(x=20, y=sf.crisi.fun(20)-1, label='CR_ISI') +
+  theme_classic()
 
 sf.isi.vw.graph
 ```
@@ -387,7 +390,6 @@ cfc.p <- c(0.39, 0.49, 0.22, 0.46)
 cfc.c <- c(0.89, 1.16, 0.99, 1.27, 1.06, 1.4, 1.04, 1.03, 1.11)
 cfc.s <- c(0, 0, 0.08, 0, 0)
 
-
 #* 0.815# using woody consumption? use full CFL here I think; 
 #ICFME surface woody consumption was 0.6 (Stocks et al 2004)
 #ALso ICFME: Stocks et al (2004): 70-86% of overstory 0-1 cm roundwood were consumed, with moisture contents from 55.5-90.4 % 
@@ -399,9 +401,17 @@ dead.cfc.mean <- mean(lf.cfl)
 s.ha.ctrl <- filter(sh.full, TRT=='ctrl') %>% pull(s.ha.d)
 dead.cfl.snag <- mean(lf.cfl*10000/s.ha.ctrl)  #mean snag weight cfl (<1 cm) per stem, from ctrl stands; in kg/stem
 
+lf.cflp16 <- round(6875 * dead.cfl.snag / 10000, 3)  #est. lf.cfl for p16
+
+sh.full$TRT[17] <- 'ctrl'  #assign partly-thinned one to ctrl grp
+
+
+lf.cfl2 <- c(0.142, 0.073, 0.313, 0.183, 0.133, 0.146, 0.131, 0.131,
+              0.176, 0.182, 0.151, lf.cflp16, 0.218, 0.084) #added p16
+
 #process LF in control/IM stands
 sh.ctrl <- filter(sh.full, TRT=='ctrl') %>% 
-  mutate(cfc.d=lf.cfl,
+  mutate(cfc.d=lf.cfl2,
          cfc.d.stem=cfc.d * 10000/s.ha.d,   #kg/m2*10000 m2/ha/s/ha = kg/stem
          c.l= HT.D * 0.75,  #assume CR of 0.5;
          sfc.add=lf.sfc(zg=FSG, cl=c.l, fcl=cfc.d), #SFC.2=(z.2/z.1)^1.5 * SFC.1
@@ -416,9 +426,15 @@ sh.ctrl2 <- sh.ctrl %>% select(Plot, ISI, isi.m, FSG, SFC, sfc.add,
 # cfc per dead stem, kg
 cfc.dstem <- summarize(sh.ctrl, mean(cfc.d.stem)) %>% pull()
 
+sh.th0 <- filter(sh.full, TRT=='th')
+
+s.ha.dth <- filter(sh.th0, s.ha.d != 2600) %>% 
+  summarize(mean(s.ha.d)) %>% pull()  # fix s.ha.d value where no data; used to be 2600, but that was including p16
+
+sh.th0$s.ha.d[2:3] <- s.ha.dth
 
 #Process LF in TH stands
-sh.th <- filter(sh.full, TRT=='th') %>% 
+sh.th <- sh.th0 %>% 
   mutate(cfc.d.stem=cfc.dstem, #use cfc in ctrl plots to estimate cfc in th plots
          cfc.d=cfc.d.stem * s.ha.d / 10000, #kg * s/ha / 10000m^2/ha to give kg/m^2
          c.l= HT.D * 0.75,  #assume CR of 0.5;
@@ -599,21 +615,24 @@ Predicting the onset of conifer crown fires is an uncertain process.
 Ladder fuels (LF), biomass that act as a bridge between surface and
 canopy fuel layers, are suspected of being disproportionately important
 in crown fire initiation, but are difficult to quantify and incorporate
-into prediction systems. In this study, we show how a simple rearranging
-of C.E. Van Wagner's classic model (Can. J. For Res. 1977, v7: 23-34)
-reframes crown fire initiation as a critical fuel consumption
-threshold-driven process. A new equation is presented for comparing fuel
-consumption at different vertical positions, which allows a rescaling of
-LF consumption down to the ground level and corresponding boost in
-equivalent mass. To test the theoretical model, we used several sources
-of evidence, primarily from Canadian experimental fires. Incorporating
-LF into empirical crown fire models improved model predictions, and best
-results were obtained with a LF multiplier of [??2-3??; draft results].
-This suggests that LF consumption is two to three times as influential
-per unit mass as conifer surface fuel consumption, even accounting for
-vertical position. The resulting models will be useful for improve fire
-behaviour predictions as well as for improving the design of hazard
-reduction treatments.
+into prediction systems. A somewhat similar problem occurs with
+multi-story canopy fuels, whereby ignition of intermediate-height layers
+is first required in order for higher canopy elements to become
+involved. In this study, we show how a simple rearranging of C.E. Van
+Wagner's classic model (Can. J. For Res. 1977, v7: 23-34) reframes crown
+fire initiation as a critical fuel consumption threshold-driven process.
+A new equation is presented for comparing fuel consumption at different
+vertical positions, which allows a rescaling of LF consumption down to
+the ground level as an additive element to actual surface fuels. To test
+the theoretical model, we used several sources of evidence, primarily
+from Canadian experimental fires. Incorporating LF into empirical crown
+fire models improved model predictions, and best results were obtained
+with a LF multiplier of approximately 4. This suggests that LF
+consumption is about four times as influential per unit mass as conifer
+surface fuel consumption, even after accounting for vertical position.
+The resulting models will be useful for improve fire behaviour
+predictions as well as for improving the design of hazard reduction
+treatments.
 
 ## Introduction
 
@@ -1253,7 +1272,7 @@ below:
 
 #t-test to compare SFC between treatments
 t.test(sh.ctrl2$SFC, sh.th2$SFC)
-#p=0.773
+#p=0.0773
 
 #equivalent Byram's intensity near crowning threshold:
 #only really works with mean SFC from both sites
@@ -1305,6 +1324,10 @@ M3isim.diff <- ((sfc.th * sf.crisim.fun(isim.thresh.th))/
   mean(sh.ctrl2$sfc.add)
 
 #M = 1.3 with ISI mod, 3.3 with isim model
+
+meanM2 <- sum(M3isi, M3isim, M3isi2, M3isim2, M3isi.diff, 
+              M3isim.diff)/6
+
 
 #Table
 mdf <- data.frame()

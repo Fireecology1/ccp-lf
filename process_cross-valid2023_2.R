@@ -4,6 +4,10 @@
 #Need cfi_process3 to be run first, or empirical_cfi_update5.Rmd (preferred)
 #Updated July 2023
 
+require(dplyr)
+require(stringr)
+require(lubridate)
+
 setwd("C:/Dan/_Remote_projects/ccp_git/ccp-cfi/")
 
 #Use fd.xv for cross-validation; keep fd.recall just in case
@@ -52,7 +56,7 @@ f8 <- formula(CFI ~ ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.SA)
 fd5 <- fd4
 fd5$FSG[sharp] <- fd4$FSG[sharp]-2
 fd5$FSG[sharp.sm] <- fd4$FSG[sharp.sm]-1
-fd5$FSG[sharp.th] <- fd4$FSG[sharp.th]-0.3  #not always used
+fd5$FSG[sharp.th] <- fd4$FSG[sharp.th]-0.25  #not always used; also tried 0.3
 fd5$FSG[icfme] <- filter(fd5, num %in% icfme) %>% 
   mutate(FSG=case_when(
     FSG > 2 ~ FSG-1, 
