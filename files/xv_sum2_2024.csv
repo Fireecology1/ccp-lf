@@ -1,0 +1,9 @@
+"","Model","runnum2","Accuracy","MCC","AIC","Dataset.reorder2.","MCC.rank","AIC.rank"
+"1","ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.FFMC","f7",0.8781,0.7547,46.19,"1.Base",6,7
+"2","ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.SA","f8",0.8635,0.7252,49.88,"1.Base",8,8
+"3","ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.FFMC","f10",0.8841,0.7671,43.27,"2.FSG Adj.",5,5
+"4","ws + I(FSG^1.5) + I(log(SFC)) + ws:MC.SA","f11",0.8879,0.7747,42.41,"2.FSG Adj.",4,3
+"5","ws + I(FSG^1.5) + I(log(SFC2)) + ws:MC.FFMC","f13",0.895,0.7888,43.19,"3.LF to SFC",2,4
+"6","ws + I(FSG^1.5) + I(log(SFC2)) + ws:MC.SA","f14",0.8742,0.7469,45.94,"3.LF to SFC",7,6
+"7","ws + I(FSG^1.5) + I(log(SFC3)) + ws:MC.FFMC","f15",0.8963,0.7915,40.75,"3.LF x M to SFC",1,1
+"8","ws + I(FSG^1.5) + I(log(SFC3)) + ws:MC.SA","f16",0.8898,0.7785,41.23,"3.LF x M to SFC",3,2
