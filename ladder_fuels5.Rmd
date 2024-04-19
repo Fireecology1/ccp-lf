@@ -1265,7 +1265,7 @@ the dead ladder fuel midpoint (cohort height/2), the equivalent of a
 crown ratio of 1. This results in significantly lower FC~SE~ values, due
 to the greater z~L~ values.
 
-Final estimates of M ranged from 2.2 to 8.7, as shown in the table
+Final estimates of M ranged from 1.4 to 8.9, as shown in the table
 below:
 
 ```{r include=FALSE}
@@ -1358,6 +1358,23 @@ xv.sum2 <-read.csv('C:/Dan/_Remote_projects/ccp_git/ccp-cfi/tables/xv_sum2_2024.
 xv.sum2 %>% select(-1, -3) %>% as.data.frame()
 ```
 
+#### Upper canopy crowning
+
+```{r}
+fd.bimodal <- filter(fd7, num %in% c(icfme, kenshoe)) %>%
+  filter(!is.na(CFI2)) %>%  #only those that crowned in Spruce
+  select(fire, ws, FSG=FSG2, MC.SA, SFC, SFC3, MC.FFMC, CFI2, Site) %>% 
+  mutate(pred.m15=predict(model15, newdata=list(
+    ws=ws, MC.FFMC=MC.FFMC, SFC3=SFC3, FSG=FSG), 
+    type='response'),
+         Corr15=round(pred.m15, 0)==CFI2) %>%
+  mutate(pred.m16=predict(model16, newdata=list(
+    ws=ws, MC.SA=MC.SA, SFC3=SFC3, FSG=FSG), 
+    type='response'),
+         Corr16=round(pred.m16)==CFI2)
+
+```
+
 ## Discussion
 
 Aside from Van Wagner's equation, this is simply a slightly different
@@ -1418,5 +1435,16 @@ conditions in Canadian conifer stands. These models can be used along
 with crown fire modelling systems. In addition to the empirical models
 shown here, SROS models can be used along with VW77, CanFire, CFIM, or
 other tools appropriate to the context and questions of interest.
+
+-What's actually going on in VW77 model: physics probably work (size of
+flame under calm conditions, etc.), but SFC isn't instantaneous (only
+part of it burns during flaming), and sROS needs to be realistic.
+
+For example, Sharpsand thinned site stands (LCBH=4.44 m) had an ISI
+threshold for crowning of 10.3. That ISI value is roughly associated
+with ROS (using an aggregated conifer ROS model) of 2.267 m min^-1^. At
+a mean SFC of 1.34 kg m^-2^, Byram's (1959) model suggests 911 kW/m
+intensity, nowhere near the 1739 kW/m needed for crowning (at mean FMC
+of 108 %).
 
 ## References:
